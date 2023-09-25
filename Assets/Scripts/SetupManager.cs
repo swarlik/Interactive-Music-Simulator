@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
-using UnityEditor;
+// using UnityEditor;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using System.Linq;
 using System;
+using SimpleFileBrowser;
 
 public class SetupManager : MonoBehaviour
 {
@@ -168,14 +169,7 @@ public class SetupManager : MonoBehaviour
 
     private void setupButton(Button button, Text filePathLabel, int index) {
         button.onClick.AddListener(delegate {
-            string path = EditorUtility.OpenFilePanel("Choose audio for branch " + (index + 1), "", "wav");
-            if (string.IsNullOrWhiteSpace(path)) {
-                return;
-            }
-            Debug.Log(path);
-            byte[] fileData = File.ReadAllBytes(path);
-            Debug.Log(fileData.Length);
-            StartCoroutine(loadClip(path, delegate(AudioClip clip) {
+            StartCoroutine(loadClip(delegate(AudioClip clip, string path) {
                 SetupManager.branchClips[index] = clip;
                 filePathLabel.text = path;
                 startButton.interactable = true;
@@ -186,10 +180,17 @@ public class SetupManager : MonoBehaviour
     private void setupVideoButton(Button uploadVideoButton, Text filePathLabel) {
         filePathLabel.text = "";
         uploadVideoButton.onClick.AddListener(delegate {
-            string path = EditorUtility.OpenFilePanel("Choose video", "", "mp4,mov");
-            Debug.Log(path);
-            SetupManager.videoFilePath = path;
-            filePathLabel.text = path;
+            FileBrowser.ShowLoadDialog((paths) => {
+                if (paths.Length == 0) {
+                    return;
+                }
+                string path = paths[0];
+                Debug.Log($"Selected file {path}");
+                SetupManager.videoFilePath = path;
+                filePathLabel.text = path;
+            }, () => {
+                Debug.Log("Canceled");
+            }, FileBrowser.PickMode.Files, true, null, null, "Select", "Select");
         });
     }
 
@@ -218,13 +219,7 @@ public class SetupManager : MonoBehaviour
 
     private void setupIntroOutroButton(Button button, bool isIntro, Text filePathLabel) {
         button.onClick.AddListener(delegate {
-            string path = EditorUtility.OpenFilePanel("Choose audio", "", "wav");
-            if (path == null) {
-                return;
-            }
-            Debug.Log(path);
-            byte[] fileData = File.ReadAllBytes(path);
-            StartCoroutine(loadClip(path, delegate(AudioClip clip) {
+            StartCoroutine(loadClip(delegate(AudioClip clip, string path) {
                 filePathLabel.text = path;
                 if (isIntro) {
                     SetupManager.intro = clip;
@@ -235,7 +230,15 @@ public class SetupManager : MonoBehaviour
         });
     }
 
-    private IEnumerator loadClip(string path, Action<AudioClip> onLoad) {
+    private IEnumerator loadClip(Action<AudioClip, string> onLoad) {
+        yield return FileBrowser.WaitForLoadDialog(FileBrowser.PickMode.Files, false, "./", null, "Load", "Select");
+        if (!FileBrowser.Success || FileBrowser.Result.Length == 0) {
+            yield break;
+        }
+
+        Debug.Log($"Selected file: {FileBrowser.Result[0]}");
+
+        string path = FileBrowser.Result[0];
         using (UnityWebRequest req = UnityWebRequestMultimedia.GetAudioClip("file://" + path, AudioType.WAV)) {
             yield return req.SendWebRequest();
             if (req.result == UnityWebRequest.Result.ConnectionError) {
@@ -243,8 +246,16 @@ public class SetupManager : MonoBehaviour
             } else {
                 Debug.Log("Loaded audio: " + path);
                 AudioClip clip = DownloadHandlerAudioClip.GetContent(req);
-                onLoad(clip);
+                onLoad(clip, path);
             }
         }
+    }
+
+    private void showDialog() {
+        FileBrowser.SetDefaultFilter(".wav");
+        FileBrowser.ShowLoadDialog(
+            (paths) => { Debug.Log( "Selected: " + paths[0] ); },
+    		() => { Debug.Log( "Canceled" ); },
+    		FileBrowser.PickMode.Files, false, "./", null, "Select Folder", "Select" );
     }
 }

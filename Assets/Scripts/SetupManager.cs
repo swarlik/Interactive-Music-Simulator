@@ -256,6 +256,6 @@ public class SetupManager : MonoBehaviour
         FileBrowser.ShowLoadDialog(
             (paths) => { Debug.Log( "Selected: " + paths[0] ); },
     		() => { Debug.Log( "Canceled" ); },
-    		FileBrowser.PickMode.Files, false, "./", null, "Select Folder", "Select" );
+    		FileBrowser.PickMode.Files, false, null, null, "Select Folder", "Select" );
     }
 }

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
-// using UnityEditor;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using System.Linq;
@@ -231,7 +230,7 @@ public class SetupManager : MonoBehaviour
     }
 
     private IEnumerator loadClip(Action<AudioClip, string> onLoad) {
-        yield return FileBrowser.WaitForLoadDialog(FileBrowser.PickMode.Files, false, "./", null, "Load", "Select");
+        yield return FileBrowser.WaitForLoadDialog(FileBrowser.PickMode.Files, false, null, null, "Load", "Select");
         if (!FileBrowser.Success || FileBrowser.Result.Length == 0) {
             yield break;
         }
@@ -249,13 +248,5 @@ public class SetupManager : MonoBehaviour
                 onLoad(clip, path);
             }
         }
-    }
-
-    private void showDialog() {
-        FileBrowser.SetDefaultFilter(".wav");
-        FileBrowser.ShowLoadDialog(
-            (paths) => { Debug.Log( "Selected: " + paths[0] ); },
-    		() => { Debug.Log( "Canceled" ); },
-    		FileBrowser.PickMode.Files, false, null, null, "Select Folder", "Select" );
     }
 }

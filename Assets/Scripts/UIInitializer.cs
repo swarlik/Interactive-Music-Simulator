@@ -6,6 +6,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine.Networking;
 using System.Linq;
+using static MusicManager;
 
 public class UIInitializer : MonoBehaviour
 {
@@ -32,8 +33,12 @@ public class UIInitializer : MonoBehaviour
         });
 
         outroButton.interactable = SetupManager.hasIntroOutro;
-        outroButton.onClick.AddListener(delegate {
+        outroButton.onClick.AddListener(() => {
             musicManager.goToOutro();
+        });
+
+        restartButton.onClick.AddListener(() => {
+            musicManager.StartPlayback();
         });
 
         stopButton.onClick.AddListener(() => {
@@ -50,9 +55,10 @@ public class UIInitializer : MonoBehaviour
             SetupManager.intro, 
             SetupManager.outro,
             SetupManager.introLength,
-            nextBranchText,
-            restartButton,
-            stopButton);
+            (Section currentSection, Section nextSection, int lastClipIndex, int nextClipIndex) => {
+                onPlaylistChange(currentSection, nextSection, lastClipIndex, nextClipIndex);
+                Debug.Log("callback");
+            });
 
         branchesDropdown.interactable = SetupManager.playMode == MusicManager.PlayMode.Manual;
         if (SetupManager.videoFilePath != null) {
@@ -99,5 +105,25 @@ public class UIInitializer : MonoBehaviour
     private void onPlayModeChange(MusicManager.PlayMode playMode) {
         branchesDropdown.interactable = playMode == MusicManager.PlayMode.Manual;
         musicManager.setPlayMode(playMode);
+    }
+
+    private void onPlaylistChange(Section currentSection, Section nextSection, int lastClipIndex, int nextClipIndex) {
+        // Update text label
+        string current = currentSection.ToString();
+        string next = nextSection.ToString();
+
+        if (currentSection == Section.Branch) {
+            current = $"Branch {(lastClipIndex + 1)}";
+        }
+        if (nextSection == Section.Branch) {
+            next = $"Branch {(nextClipIndex + 1)}";
+        }
+
+        nextBranchText.text = $"Now playing: {current}. Next: {next}";
+
+        // Update buttons
+        restartButton.interactable = currentSection == Section.None;
+        stopButton.interactable = currentSection != Section.None;
+        outroButton.interactable = SetupManager.hasIntroOutro && currentSection != Section.Outro;
     }
 }

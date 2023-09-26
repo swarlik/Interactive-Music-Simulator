@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
+using System;
 
 public class MusicManager : MonoBehaviour
 {
@@ -11,6 +12,14 @@ public class MusicManager : MonoBehaviour
         Random,
         Manual
     }
+
+    public enum Section {
+        Intro,
+        Branch,
+        Outro,
+        None
+    }
+
     public AudioSource audio1;
     public AudioSource audio2;
 
@@ -23,9 +32,7 @@ public class MusicManager : MonoBehaviour
     private AudioClip intro;
     private AudioClip outro;
     private float introLength;
-    private Text nextBranchLabel;
-    private Button restartButton;
-    private Button stopButton;
+    private Action<Section, Section, int, int> onPlaylistChange;
 
     private bool initialized;
     private int lastClipIndex;
@@ -34,12 +41,6 @@ public class MusicManager : MonoBehaviour
     private bool isRunning;
     private bool audioSourceFlip;
 
-    private enum Section {
-        Intro,
-        Branch,
-        Outro,
-        None
-    }
     private Section currentSection;
     private Section nextSection;
 
@@ -94,7 +95,6 @@ public class MusicManager : MonoBehaviour
                 break;
             case Section.None:
                 isRunning = false;
-                restartButton.interactable = true;
                 break;
         }
 
@@ -106,7 +106,7 @@ public class MusicManager : MonoBehaviour
             queueImmediate = false;
         }
 
-        updateText();
+        dispatchUpdate();
         if (clipToPlay == null) {
             // No clip selected, we are ending
             return;
@@ -132,9 +132,7 @@ public class MusicManager : MonoBehaviour
             AudioClip intro,
             AudioClip outro,
             float introLength,
-            Text nextBranchLabel,
-            Button restartButton,
-            Button stopButton)
+            Action<Section, Section, int, int> onPlaylistChange)
     {
         this.branches = branches;
         this.branchLengths = branchLengths;
@@ -145,10 +143,7 @@ public class MusicManager : MonoBehaviour
         this.intro = intro;
         this.outro = outro;
         this.introLength = introLength;
-        this.nextBranchLabel = nextBranchLabel;
-        this.restartButton = restartButton;
-        this.stopButton = stopButton;
-        configureRestartButton(this.restartButton);
+        this.onPlaylistChange = onPlaylistChange;
         initialized = true;
     }
 
@@ -185,7 +180,7 @@ public class MusicManager : MonoBehaviour
         if (immediate) {
             changeImmediately();
         }
-        updateText();
+        dispatchUpdate();
     }
 
     public void setPlayMode(MusicManager.PlayMode newPlayMode) {
@@ -196,7 +191,7 @@ public class MusicManager : MonoBehaviour
 
         playMode = newPlayMode;
         nextClipIndex = getNextIndex();
-        updateText();
+        dispatchUpdate();
     }
 
     public void goToOutro() {
@@ -216,7 +211,7 @@ public class MusicManager : MonoBehaviour
             changeImmediately();
         }
 
-        updateText();
+        dispatchUpdate();
     }
 
     public void endPlayback() {
@@ -224,19 +219,8 @@ public class MusicManager : MonoBehaviour
         changeImmediately();
     }
 
-    private void updateText() {
-        string current = currentSection.ToString();
-        string next = nextSection.ToString();
-
-        if (currentSection == Section.Branch) {
-            current = $"Branch {(lastClipIndex + 1)}";
-        }
-        if (nextSection == Section.Branch) {
-            next = $"Branch {(nextClipIndex + 1)}";
-        }
-
-        nextBranchLabel.text = $"Now playing: {current}. Next: {next}";
-        updateButtons();
+    private void dispatchUpdate() {
+        onPlaylistChange(currentSection, nextSection, lastClipIndex, nextClipIndex);
     }
 
     private int getNextIndex() {
@@ -244,31 +228,14 @@ public class MusicManager : MonoBehaviour
             return (lastClipIndex + 1) % branches.Length;
         }
         if (playMode == PlayMode.Random) {
-            return Random.Range(0, branches.Length);
+            return UnityEngine.Random.Range(0, branches.Length);
         } 
         return lastClipIndex == -1 ? 0 : lastClipIndex;
-    }
-
-    private void configureRestartButton(Button restartButton) {
-        restartButton.interactable = false;
-        restartButton.onClick.AddListener(delegate {
-            if (currentSection != Section.None) {
-                return;
-            }
-
-            StartPlayback();
-            restartButton.interactable = false;
-        });
     }
 
     // Trigger the next section near immediately (0.1s delay)
     private void changeImmediately() {
         queueImmediate = true;
         nextEventTime = AudioSettings.dspTime + 0.1f;
-    }
-
-    private void updateButtons() {
-        restartButton.interactable = currentSection == Section.None;
-        stopButton.interactable = currentSection != Section.None && currentSection != Section.Outro;
     }
 }

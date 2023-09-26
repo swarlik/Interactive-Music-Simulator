@@ -117,20 +117,22 @@ public class PlaybackConfig {
     public static SerializedSettings Serialize(PlaybackConfig config) {
         SerializedSettings settings = new SerializedSettings();
         settings.config = config;
-        if (settings.config.introFile != null) {
-            settings.config.introFile = FullPathToLocalPath(settings.config.introFile);
+        // Copy object to avoid affecting current settings
+        SerializedSettings settingsCopy = JsonUtility.FromJson<SerializedSettings>(JsonUtility.ToJson(settings));
+        if (settingsCopy.config.introFile != null) {
+            settingsCopy.config.introFile = FullPathToLocalPath(settings.config.introFile);
         }
-        if (settings.config.outroFile != null) {
-            settings.config.outroFile = FullPathToLocalPath(settings.config.outroFile);
+        if (settingsCopy.config.outroFile != null) {
+            settingsCopy.config.outroFile = FullPathToLocalPath(settings.config.outroFile);
         }
-        if (settings.config.videoFilePath != null) {
-            settings.config.videoFilePath = FullPathToLocalPath(settings.config.videoFilePath);
+        if (settingsCopy.config.videoFilePath != null) {
+            settingsCopy.config.videoFilePath = FullPathToLocalPath(settings.config.videoFilePath);
         }
-        settings.branchFiles = config.GetBranchPaths().Select(path => {
+        settingsCopy.branchFiles = config.GetBranchPaths().Select(path => {
             return FullPathToLocalPath(path);
         }).Where(path => path != null).ToArray();
-        settings.branchLengths = config.GetBranchLengths().ToArray();
-        return settings;
+        settingsCopy.branchLengths = config.GetBranchLengths().ToArray();
+        return settingsCopy;
     }
     
     public static bool IsPathValid(string path) {

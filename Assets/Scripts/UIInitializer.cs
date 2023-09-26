@@ -21,10 +21,13 @@ public class UIInitializer : MonoBehaviour
     public Button stopButton;
     public Button outroButton;
 
+    public PlaybackConfig currentConfig;
+
     // Start is called before the first frame update
     void Start()
     {
-        Debug.Log("*** Starting playback. Intro/Outro? " + SetupManager.hasIntroOutro + "; Reverb? " + SetupManager.hasReverb + "; # Clips: " + SetupManager.branchClips.Count + "; Play Mode: " + SetupManager.playMode);
+        currentConfig = SetupManager.config;
+        Debug.Log("*** Starting playback. Intro/Outro? " + currentConfig.hasIntroOutro + "; Reverb? " + currentConfig.hasReverb + "; # Clips: " + currentConfig.GetBranchClips().Count + "; Play Mode: " + currentConfig.playMode);
         setupBranchesDropdown(branchesDropdown);
         setupBranchModeDropdown(branchModeDropdown);
 
@@ -32,7 +35,7 @@ public class UIInitializer : MonoBehaviour
             onBranchModeChange(branchModeDropdown);
         });
 
-        outroButton.interactable = SetupManager.hasIntroOutro;
+        outroButton.interactable = currentConfig.hasIntroOutro && currentConfig.outro != null;
         outroButton.onClick.AddListener(() => {
             musicManager.goToOutro();
         });
@@ -46,23 +49,15 @@ public class UIInitializer : MonoBehaviour
         });
 
         musicManager.Initialize(
-            SetupManager.branchClips.ToArray(), 
-            SetupManager.branchLengths.ToArray(), 
-            SetupManager.playMode, 
-            SetupManager.hasReverb, 
-            SetupManager.hasIntroOutro, 
-            SetupManager.immediate,
-            SetupManager.intro, 
-            SetupManager.outro,
-            SetupManager.introLength,
+            currentConfig,
             (Section currentSection, Section nextSection, int lastClipIndex, int nextClipIndex) => {
                 onPlaylistChange(currentSection, nextSection, lastClipIndex, nextClipIndex);
                 Debug.Log("callback");
             });
 
-        branchesDropdown.interactable = SetupManager.playMode == MusicManager.PlayMode.Manual;
-        if (SetupManager.videoFilePath != null) {
-            videoPlayerController.startVideo(SetupManager.videoFilePath);
+        branchesDropdown.interactable = currentConfig.playMode == MusicManager.PlayMode.Manual;
+        if (currentConfig.videoFilePath != null) {
+            videoPlayerController.startVideo(currentConfig.videoFilePath);
         }
 
         musicManager.StartPlayback();
@@ -78,7 +73,7 @@ public class UIInitializer : MonoBehaviour
         branchesDropdown.ClearOptions();
 
         List<string> options = new List<string>();
-        for (int i = 0; i < SetupManager.branchClips.Count; i++) {
+        for (int i = 0; i < currentConfig.GetBranchClips().Count; i++) {
             options.Add($"Branch {i+1}");
         }
         branchesDropdown.AddOptions(options);
@@ -90,7 +85,7 @@ public class UIInitializer : MonoBehaviour
     }
 
     private void setupBranchModeDropdown(Dropdown branchModeDropdown) {
-        Dropdown.OptionData option = branchModeDropdown.options.First(option => option.text.Equals(SetupManager.playMode.ToString()));
+        Dropdown.OptionData option = branchModeDropdown.options.First(option => option.text.Equals(currentConfig.playMode.ToString()));
         int index = branchModeDropdown.options.IndexOf(option);
         branchModeDropdown.value = index;
         Debug.Log("Selected mode: " + option.text);
@@ -124,6 +119,6 @@ public class UIInitializer : MonoBehaviour
         // Update buttons
         restartButton.interactable = currentSection == Section.None;
         stopButton.interactable = currentSection != Section.None;
-        outroButton.interactable = SetupManager.hasIntroOutro && currentSection != Section.Outro;
+        outroButton.interactable = currentConfig.hasIntroOutro && currentConfig.outro != null && currentSection != Section.Outro;
     }
 }

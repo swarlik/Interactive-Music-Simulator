@@ -122,27 +122,16 @@ public class MusicManager : MonoBehaviour
         audioSourceFlip = !audioSourceFlip;
     }
 
-    public void Initialize(
-            AudioClip[] branches,
-            float[] branchLengths,
-            PlayMode playMode,
-            bool hasReverb,
-            bool hasIntroOutro,
-            bool immediate,
-            AudioClip intro,
-            AudioClip outro,
-            float introLength,
-            Action<Section, Section, int, int> onPlaylistChange)
-    {
-        this.branches = branches;
-        this.branchLengths = branchLengths;
-        this.playMode = playMode;
-        this.hasReverb = hasReverb;
-        this.hasIntroOutro = hasIntroOutro;
-        this.immediate = immediate;
-        this.intro = intro;
-        this.outro = outro;
-        this.introLength = introLength;
+    public void Initialize(PlaybackConfig config, Action<Section, Section, int, int> onPlaylistChange) {
+        this.branches = config.GetBranchClips().ToArray();
+        this.branchLengths = config.GetBranchLengths().ToArray();
+        this.playMode = config.playMode;
+        this.hasReverb = config.hasReverb;
+        this.hasIntroOutro = config.hasIntroOutro;
+        this.immediate = config.immediate;
+        this.intro = config.intro;
+        this.outro = config.outro;
+        this.introLength = config.introLength;
         this.onPlaylistChange = onPlaylistChange;
         initialized = true;
     }

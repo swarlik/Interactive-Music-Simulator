@@ -14,16 +14,7 @@ public class SetupManager : MonoBehaviour
     private static int MIN_BRANCHES = 1;
     private static int MAX_BRANCHES = 5;
 
-    public static List<AudioClip> branchClips;
-    public static List<float> branchLengths;
-    public static bool hasIntroOutro;
-    public static bool hasReverb;
-    public static MusicManager.PlayMode playMode;
-    public static bool immediate = false;
-    public static AudioClip intro;
-    public static AudioClip outro;
-    public static float introLength = -1.0f;
-    public static string videoFilePath;
+    public static PlaybackConfig config = null;
 
     public Toggle introOutroToggle;
     public Toggle reverbToggle;
@@ -42,39 +33,46 @@ public class SetupManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        if (config == null) {
+            config = new PlaybackConfig(MAX_BRANCHES);
+        }
+
         loopLengthObjects = GameObject.FindGameObjectsWithTag("Loop Length");
         branchObjects = new List<GameObject>();
-        SetupManager.branchClips = new List<AudioClip>();
-        SetupManager.branchLengths = new List<float>();
 
         for (int i = 0; i < MAX_BRANCHES; i++) {
-            SetupManager.branchClips.Add(null);
-            SetupManager.branchLengths.Add(-1.0f);
             configureBranch(i);
         }
 
         configureIntroOutro();
 
+        introOutroToggle.isOn = config.hasIntroOutro;
         onIntroOutroToggle(introOutroToggle.isOn);
         introOutroToggle.onValueChanged.AddListener(delegate {
             onIntroOutroToggle(introOutroToggle.isOn);
         });
 
+        reverbToggle.isOn = config.hasReverb;
         onReverbToggle(reverbToggle.isOn);
         reverbToggle.onValueChanged.AddListener(delegate {
             onReverbToggle(reverbToggle.isOn);
         });
 
+
+        int index = modeDropdown.options.FindIndex((option) => option.text.Equals(config.playMode.ToString()));
+        modeDropdown.value = index;
         onModeChange(modeDropdown);
         modeDropdown.onValueChanged.AddListener(delegate {
             onModeChange(modeDropdown);
         });
 
+        styleDropdown.value = config.immediate ? 1 : 0;
         onStyleChange(styleDropdown);
         styleDropdown.onValueChanged.AddListener(delegate {
             onStyleChange(styleDropdown);
         });
 
+        branchCountInput.text = config.numBranches.ToString();
         onBranchCountChange(branchCountInput);
         branchCountInput.onValueChanged.AddListener(delegate {
             onBranchCountChange(branchCountInput);
@@ -82,9 +80,8 @@ public class SetupManager : MonoBehaviour
 
         setupVideoButton(uploadVideoButton, videoFilePathLabel);
 
-        startButton.interactable = false;
+        startButton.interactable = config.GetBranchClips().Count > 0;
         startButton.onClick.AddListener(delegate {
-            SetupManager.branchClips = SetupManager.branchClips.Where(clip => clip != null).ToList();
             SceneManager.LoadScene("Main Scene");
         });
     }
@@ -99,29 +96,31 @@ public class SetupManager : MonoBehaviour
         for (int i = 0; i < MAX_BRANCHES; i++) {
             branchObjects[i].SetActive(i < count);
         }
+        config.SetActiveBranches(count);
     }
 
     private void onReverbToggle(bool isOn) {
-        SetupManager.hasReverb = reverbToggle.isOn;
+        config.hasReverb = isOn;
         foreach (GameObject loopLength in loopLengthObjects) {
             loopLength.SetActive(isOn);
         }
     }
 
     private void onIntroOutroToggle(bool isOn) {
-        SetupManager.hasIntroOutro = isOn;
+        config.hasIntroOutro = isOn;
         introObject.SetActive(isOn);
         outroObject.SetActive(isOn);
     }
 
     private void onModeChange(Dropdown modeDropdown) {
-        SetupManager.playMode = 
+        MusicManager.PlayMode playMode =
             (MusicManager.PlayMode) System.Enum.Parse(typeof(MusicManager.PlayMode), modeDropdown.options[modeDropdown.value].text);
+        config.playMode = playMode;
     }
 
     private void onStyleChange(Dropdown styleDropdown) {
         string value = styleDropdown.options[styleDropdown.value].text;
-        SetupManager.immediate = value.Equals("Immediate");
+        config.immediate = value.Equals("Immediate");
     }
 
     private void onBranchCountChange(InputField branchCountInput) {
@@ -150,10 +149,13 @@ public class SetupManager : MonoBehaviour
 
         GameObject filePathObject = GameObject.Find($"{prefix}/File Path 1");
         Text filePathLabel = filePathObject.GetComponent<Text>();
-        filePathLabel.text = "";
+        filePathLabel.text = index < config.GetBranchPaths().Count ? config.GetBranchPaths()[index] : "";
 
         GameObject lengthInputObject = GameObject.Find($"{prefix}/Loop Length 1/Length Input 1");
         InputField lengthInput = lengthInputObject.GetComponent<InputField>();
+        if (index < config.GetBranchLengths().Count) {
+            lengthInput.text = config.GetBranchLengths()[index].ToString();
+        }
         lengthInput.onValueChanged.AddListener(delegate {
             string value = lengthInput.text;
             if (value == "") {
@@ -161,7 +163,7 @@ public class SetupManager : MonoBehaviour
             }
             float length = float.Parse(value);
             Debug.Log($"setting length {index} to {length}");
-            SetupManager.branchLengths[index] = length;
+            config.SetBranchLength(length, index);
         });
         setupButton(uploadButton, filePathLabel, index);
     }
@@ -169,7 +171,7 @@ public class SetupManager : MonoBehaviour
     private void setupButton(Button button, Text filePathLabel, int index) {
         button.onClick.AddListener(delegate {
             StartCoroutine(loadClip(delegate(AudioClip clip, string path) {
-                SetupManager.branchClips[index] = clip;
+                config.SetBranchClip(clip, index, path);
                 filePathLabel.text = path;
                 startButton.interactable = true;
             }));
@@ -177,7 +179,7 @@ public class SetupManager : MonoBehaviour
     }
 
     private void setupVideoButton(Button uploadVideoButton, Text filePathLabel) {
-        filePathLabel.text = "";
+        filePathLabel.text = config.videoFilePath;
         uploadVideoButton.onClick.AddListener(delegate {
             FileBrowser.ShowLoadDialog((paths) => {
                 if (paths.Length == 0) {
@@ -185,7 +187,7 @@ public class SetupManager : MonoBehaviour
                 }
                 string path = paths[0];
                 Debug.Log($"Selected file {path}");
-                SetupManager.videoFilePath = path;
+                config.videoFilePath = path;
                 filePathLabel.text = path;
             }, () => {
                 Debug.Log("Canceled");
@@ -200,11 +202,14 @@ public class SetupManager : MonoBehaviour
         Array.ForEach(new[] {"Intro", "Outro"}, delegate(string value) {
             Button button = GameObject.Find($"{value}/Upload {value}").GetComponent<Button>();
             Text label = GameObject.Find($"{value}/File Path").GetComponent<Text>();
-            label.text = "";
+            label.text = value.Equals("Intro") ? config.introFile : config.outroFile;
             setupIntroOutroButton(button, value.Equals("Intro"), label);
         });
 
         InputField introLength = GameObject.Find("Intro/Intro Length/Length Input 1").GetComponent<InputField>();
+        if (config.introLength > 0) {
+            introLength.text = config.introLength.ToString();
+        }
         introLength.onValueChanged.AddListener(delegate {
             string value = introLength.text;
             if (value == "") {
@@ -212,7 +217,7 @@ public class SetupManager : MonoBehaviour
             }
             float length = float.Parse(value);
             Debug.Log($"setting intro length to {length}");
-            SetupManager.introLength = length;
+            config.introLength = length;
         });
     }
 
@@ -221,9 +226,11 @@ public class SetupManager : MonoBehaviour
             StartCoroutine(loadClip(delegate(AudioClip clip, string path) {
                 filePathLabel.text = path;
                 if (isIntro) {
-                    SetupManager.intro = clip;
+                    config.intro = clip;
+                    config.introFile = path;
                 } else {
-                    SetupManager.outro = clip;
+                    config.outro = clip;
+                    config.outroFile = path;
                 }
             }));
         });

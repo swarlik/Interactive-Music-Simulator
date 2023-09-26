@@ -119,13 +119,13 @@ public class PlaybackConfig {
         settings.config = config;
         // Copy object to avoid affecting current settings
         SerializedSettings settingsCopy = JsonUtility.FromJson<SerializedSettings>(JsonUtility.ToJson(settings));
-        if (settingsCopy.config.introFile != null || settingsCopy.config.introFile != "") {
+        if (settingsCopy.config.introFile != null && settingsCopy.config.introFile != "") {
             settingsCopy.config.introFile = FullPathToLocalPath(settingsCopy.config.introFile);
         }
-        if (settingsCopy.config.outroFile != null || settingsCopy.config.outroFile != "") {
+        if (settingsCopy.config.outroFile != null && settingsCopy.config.outroFile != "") {
             settingsCopy.config.outroFile = FullPathToLocalPath(settingsCopy.config.outroFile);
         }
-        if (settingsCopy.config.videoFilePath != null || settingsCopy.config.videoFilePath != "") {
+        if (settingsCopy.config.videoFilePath != null && settingsCopy.config.videoFilePath != "") {
             settingsCopy.config.videoFilePath = FullPathToLocalPath(settingsCopy.config.videoFilePath);
         }
         settingsCopy.branchFiles = config.GetBranchPaths().Select(path => {

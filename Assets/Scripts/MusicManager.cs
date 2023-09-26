@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Linq;
 
 public class MusicManager : MonoBehaviour
 {
@@ -24,6 +25,7 @@ public class MusicManager : MonoBehaviour
     private float introLength;
     private Text nextBranchLabel;
     private Button restartButton;
+    private Button stopButton;
 
     private bool initialized;
     private int lastClipIndex;
@@ -32,10 +34,15 @@ public class MusicManager : MonoBehaviour
     private bool isRunning;
     private bool audioSourceFlip;
 
-    private bool queueIntro;
-    private bool queueOutro;
-    private bool playingIntro;
-    private bool playingOutro;
+    private enum Section {
+        Intro,
+        Branch,
+        Outro,
+        None
+    }
+    private Section currentSection;
+    private Section nextSection;
+
     private bool queueImmediate;
 
     // Start is called before the first frame update
@@ -44,10 +51,6 @@ public class MusicManager : MonoBehaviour
         initialized = false;
         isRunning = false;
         audioSourceFlip = true;
-        queueIntro = false;
-        queueOutro = false;
-        playingIntro = true;
-        playingOutro = false;
     }
 
     // Update is called once per frame
@@ -57,39 +60,45 @@ public class MusicManager : MonoBehaviour
             return;
         }
 
+        // Don't switch clips until audio is within 1s of ending.
         if (AudioSettings.dspTime + 1.0f < nextEventTime) {
             return;
+        }  
+
+        // About to start playback of the next section.
+        currentSection = nextSection;
+        AudioClip clipToPlay = null;
+        float playLength = -1.0f;
+
+        switch (currentSection) {
+            case Section.Intro:
+                clipToPlay = intro;
+                playLength = introLength > 0 && hasReverb ? introLength : intro.length;
+                nextSection = Section.Branch;
+                break;
+            case Section.Branch:
+                clipToPlay = branches[nextClipIndex];
+                lastClipIndex = nextClipIndex;
+                nextClipIndex = getNextIndex();
+                if (hasReverb && lastClipIndex < branchLengths.Length && branchLengths[lastClipIndex] > 0) {
+                    playLength = branchLengths[lastClipIndex];
+                } else {
+                    playLength = clipToPlay.length;
+                }
+                nextSection = Section.Branch;
+                break;
+            case Section.Outro:
+                clipToPlay = outro;
+                playLength = outro.length;
+                nextSection = Section.None;
+                break;
+            case Section.None:
+                isRunning = false;
+                restartButton.interactable = true;
+                break;
         }
 
-        AudioClip clipToPlay;
-        float playLength;
-
-        if (queueOutro && outro != null) {
-            clipToPlay = outro;
-            playLength = outro.length;
-            isRunning = false;
-            queueOutro = false;
-            playingOutro = true;
-            restartButton.interactable = true;
-        } else if (queueIntro && intro != null) {
-            clipToPlay = intro;
-            queueIntro = false;
-            playingIntro = true;
-            playLength = introLength > 0 && hasReverb ? introLength : intro.length;
-        } else {
-            clipToPlay = branches[nextClipIndex];
-            lastClipIndex = nextClipIndex;
-            nextClipIndex = getNextIndex();
-            if (hasReverb && lastClipIndex < branchLengths.Length && branchLengths[lastClipIndex] > 0) {
-                playLength = branchLengths[lastClipIndex];
-            } else {
-                playLength = clipToPlay.length;
-            }
-            playingIntro = false;
-            playingOutro = false;
-        }
-
-        if (immediate && queueImmediate) {
+        if (queueImmediate) {
             AudioSource prev = audioSourceFlip ? audio2 : audio1;
             if (prev.isPlaying) {
                 prev.SetScheduledEndTime(nextEventTime);
@@ -97,16 +106,20 @@ public class MusicManager : MonoBehaviour
             queueImmediate = false;
         }
 
+        updateText();
+        if (clipToPlay == null) {
+            // No clip selected, we are ending
+            return;
+        }
+
+        // Schedule the next clip
         AudioSource audio = audioSourceFlip ? audio1 : audio2;
         audio.clip = clipToPlay;
         audio.PlayScheduled(nextEventTime);
-        Debug.Log($"Scheduled branch {(queueIntro ? "intro" : (lastClipIndex + 1))} to start at time {nextEventTime}");
 
+        // Set the next event time and next audio source
         nextEventTime += playLength;
-        Debug.Log($"Next clip to play: {nextClipIndex + 1} at time {nextEventTime}");
-
         audioSourceFlip = !audioSourceFlip;
-        updateText();
     }
 
     public void Initialize(
@@ -120,7 +133,8 @@ public class MusicManager : MonoBehaviour
             AudioClip outro,
             float introLength,
             Text nextBranchLabel,
-            Button restartButton)
+            Button restartButton,
+            Button stopButton)
     {
         this.branches = branches;
         this.branchLengths = branchLengths;
@@ -133,6 +147,7 @@ public class MusicManager : MonoBehaviour
         this.introLength = introLength;
         this.nextBranchLabel = nextBranchLabel;
         this.restartButton = restartButton;
+        this.stopButton = stopButton;
         configureRestartButton(this.restartButton);
         initialized = true;
     }
@@ -146,7 +161,8 @@ public class MusicManager : MonoBehaviour
         nextEventTime = AudioSettings.dspTime + 0.2f;
         lastClipIndex = -1;
         nextClipIndex = getNextIndex();
-        queueIntro = hasIntroOutro && intro != null;
+        currentSection = Section.None;
+        nextSection = hasIntroOutro && intro ? Section.Intro : Section.Branch;
         isRunning = true;
     }
 
@@ -167,8 +183,7 @@ public class MusicManager : MonoBehaviour
 
         nextClipIndex = index;
         if (immediate) {
-            queueImmediate = true;
-            nextEventTime = AudioSettings.dspTime + 0.1f;
+            changeImmediately();
         }
         updateText();
     }
@@ -190,34 +205,38 @@ public class MusicManager : MonoBehaviour
             return;
         }
 
-        queueOutro = true;
-        if (immediate) {
-            queueImmediate = true;
-            nextEventTime = AudioSettings.dspTime + 0.1f;
+        if (!hasIntroOutro || outro == null) {
+            Debug.Log("Intro/outro disabled or no outro provided");
+            return;
         }
+
+        nextSection = Section.Outro;
+        
+        if (immediate) {
+            changeImmediately();
+        }
+
         updateText();
     }
 
+    public void endPlayback() {
+        nextSection = Section.None;
+        changeImmediately();
+    }
+
     private void updateText() {
-        string current;
-        string next;
-        if (playingIntro) {
-            current = "Intro";
-        } else if (playingOutro) {
-            current = "Outro";
-        } else {
+        string current = currentSection.ToString();
+        string next = nextSection.ToString();
+
+        if (currentSection == Section.Branch) {
             current = $"Branch {(lastClipIndex + 1)}";
         }
-
-        if (queueIntro) {
-            next = "Intro";
-        } else if (queueOutro) {
-            next = "Outro";
-        } else {
+        if (nextSection == Section.Branch) {
             next = $"Branch {(nextClipIndex + 1)}";
         }
 
         nextBranchLabel.text = $"Now playing: {current}. Next: {next}";
+        updateButtons();
     }
 
     private int getNextIndex() {
@@ -233,12 +252,23 @@ public class MusicManager : MonoBehaviour
     private void configureRestartButton(Button restartButton) {
         restartButton.interactable = false;
         restartButton.onClick.AddListener(delegate {
-            if (!playingOutro) {
+            if (currentSection != Section.None) {
                 return;
             }
 
             StartPlayback();
             restartButton.interactable = false;
         });
+    }
+
+    // Trigger the next section near immediately (0.1s delay)
+    private void changeImmediately() {
+        queueImmediate = true;
+        nextEventTime = AudioSettings.dspTime + 0.1f;
+    }
+
+    private void updateButtons() {
+        restartButton.interactable = currentSection == Section.None;
+        stopButton.interactable = currentSection != Section.None && currentSection != Section.Outro;
     }
 }

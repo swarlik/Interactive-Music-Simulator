@@ -16,11 +16,9 @@ public class UIInitializer : MonoBehaviour
     public Dropdown branchesDropdown;
     public Text nextBranchText;
 
-    [Header("Game End Objects")]
-    public Button endButton;
-
-    [Header("Restart Button")]
     public Button restartButton;
+    public Button stopButton;
+    public Button outroButton;
 
     // Start is called before the first frame update
     void Start()
@@ -33,11 +31,13 @@ public class UIInitializer : MonoBehaviour
             onBranchModeChange(branchModeDropdown);
         });
 
-        endButton.interactable = SetupManager.hasIntroOutro;
-        endButton.onClick.AddListener(delegate {
-            if (SetupManager.hasIntroOutro) {
-                musicManager.goToOutro();
-            }
+        outroButton.interactable = SetupManager.hasIntroOutro;
+        outroButton.onClick.AddListener(delegate {
+            musicManager.goToOutro();
+        });
+
+        stopButton.onClick.AddListener(() => {
+            musicManager.endPlayback();
         });
 
         musicManager.Initialize(
@@ -51,7 +51,8 @@ public class UIInitializer : MonoBehaviour
             SetupManager.outro,
             SetupManager.introLength,
             nextBranchText,
-            restartButton);
+            restartButton,
+            stopButton);
 
         branchesDropdown.interactable = SetupManager.playMode == MusicManager.PlayMode.Manual;
         if (SetupManager.videoFilePath != null) {

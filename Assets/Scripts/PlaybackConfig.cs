@@ -3,8 +3,17 @@ using System.Linq;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System;
+using System.IO;
 
+[System.Serializable]
 public class PlaybackConfig {
+    public class SerializedSettings {
+        public PlaybackConfig config;
+        public string[] branchFiles;
+        public float[] branchLengths;
+    }
+
     private static int DEFAULT_BRANCHES = 2;
 
     private readonly List<AudioClip> branchClips;
@@ -29,6 +38,21 @@ public class PlaybackConfig {
         branchLengths = Enumerable.Repeat(-1.0f, maxBranches).ToList();
     }
 
+    public PlaybackConfig(int maxBranches, PlaybackConfig baseConfig)
+        : this(maxBranches) 
+    {
+        Debug.Log($"config constructor. baseConfig branches: {baseConfig.numBranches}");
+        this.numBranches = baseConfig.numBranches;
+        this.hasIntroOutro = baseConfig.hasIntroOutro;
+        this.hasReverb = baseConfig.hasReverb;
+        this.immediate = baseConfig.immediate;
+        this.introFile = baseConfig.introFile != "" ? LocalPathToFullPath(baseConfig.introFile) : null;
+        this.outroFile = baseConfig.outroFile != "" ? LocalPathToFullPath(baseConfig.outroFile) : null;
+        this.introLength = baseConfig.introLength;
+        this.videoFilePath = baseConfig.videoFilePath != "" ? LocalPathToFullPath(baseConfig.videoFilePath) : baseConfig.videoFilePath;
+        // Copy all settings
+    }
+
     public void SetActiveBranches(int count) {
         numBranches = count;
     }
@@ -38,7 +62,7 @@ public class PlaybackConfig {
             Debug.Log("index out of bounds");
             return;
         }
-
+        Debug.Log($"Setting {path} at index {index}");
         branchClips[index] = clip;
         branchFiles[index] = path;
     }
@@ -78,13 +102,52 @@ public class PlaybackConfig {
     }
 
     public List<string> GetBranchPaths() {
+        Debug.Log($"Getting branch paths. Num branches {numBranches}");
         List<string> activePaths = new List<string>();
         for (int i = 0; i < numBranches; i++) {
+            Debug.Log(branchFiles[i]);
             if (branchFiles[i] != null) {
                 activePaths.Add(branchFiles[i]);
             }
         }
 
         return activePaths;
+    }
+
+    public static SerializedSettings Serialize(PlaybackConfig config) {
+        SerializedSettings settings = new SerializedSettings();
+        settings.config = config;
+        if (settings.config.introFile != null) {
+            settings.config.introFile = FullPathToLocalPath(settings.config.introFile);
+        }
+        if (settings.config.outroFile != null) {
+            settings.config.outroFile = FullPathToLocalPath(settings.config.outroFile);
+        }
+        if (settings.config.videoFilePath != null) {
+            settings.config.videoFilePath = FullPathToLocalPath(settings.config.videoFilePath);
+        }
+        settings.branchFiles = config.GetBranchPaths().Select(path => {
+            return FullPathToLocalPath(path);
+        }).Where(path => path != null).ToArray();
+        settings.branchLengths = config.GetBranchLengths().ToArray();
+        return settings;
+    }
+    
+    public static bool IsPathValid(string path) {
+        return Application.isEditor || path.IndexOf(Path.GetFullPath("./")) == 0;
+    }
+
+    private static string FullPathToLocalPath(string path) {
+        string currentDirectory = Path.GetFullPath("./");
+        int index = path.IndexOf(currentDirectory);
+        if (index != 0) {
+            return null;
+        }
+
+        return path.Substring(currentDirectory.Length);        
+    }
+
+    private static string LocalPathToFullPath(string path) {
+        return Path.GetFullPath("./") + path;
     }
 }

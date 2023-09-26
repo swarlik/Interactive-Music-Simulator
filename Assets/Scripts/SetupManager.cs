@@ -39,6 +39,8 @@ public class SetupManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        Debug.developerConsoleVisible = true;
+        Debug.LogError("test");
         if (config == null) {
             config = new PlaybackConfig(MAX_BRANCHES);
         }

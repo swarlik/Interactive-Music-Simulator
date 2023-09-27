@@ -39,8 +39,6 @@ public class SetupManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Debug.developerConsoleVisible = true;
-        Debug.LogError("test");
         if (config == null) {
             config = new PlaybackConfig(MAX_BRANCHES);
         }
@@ -50,6 +48,53 @@ public class SetupManager : MonoBehaviour
         loopLengthObjects = GameObject.FindGameObjectsWithTag("Loop Length");
 
         initializeUI();
+    }
+
+    // WIP
+    private void setupUI() {
+        // Setup listeners
+
+        introOutroToggle.onValueChanged.AddListener(delegate {
+            onIntroOutroToggle(introOutroToggle.isOn);
+        });
+
+        reverbToggle.onValueChanged.AddListener(delegate {
+            onReverbToggle(reverbToggle.isOn);
+        });
+
+        modeDropdown.onValueChanged.AddListener(delegate {
+            onModeChange(modeDropdown);
+        });
+
+        styleDropdown.onValueChanged.AddListener(delegate {
+            onStyleChange(styleDropdown);
+        });
+
+        branchCountInput.onValueChanged.AddListener(delegate {
+            onBranchCountChange(branchCountInput);
+        });
+
+        startButton.onClick.AddListener(delegate {
+            SceneManager.LoadScene("Main Scene");
+        });
+
+        saveButton.onClick.AddListener(() => {
+            writeToFile();
+            saveText.text = "settings saved!";
+        });
+
+        loadButton.onClick.AddListener(() => {
+            loadFromFile((PlaybackConfig newConfig) => {
+                config = newConfig;
+                // Re-initialize the UI with the loaded config
+                refreshUI();
+                saveText.text = "settings loaded!";
+            });
+        });
+    }
+
+    private void refreshUI() {
+
     }
 
     private void initializeUI() {

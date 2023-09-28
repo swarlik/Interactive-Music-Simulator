@@ -20,6 +20,8 @@ public class UIInitializer : MonoBehaviour
     public Button restartButton;
     public Button stopButton;
     public Button outroButton;
+    public Slider musicSlider;
+    public Slider videoSlider;
 
     public PlaybackConfig currentConfig;
 
@@ -48,6 +50,19 @@ public class UIInitializer : MonoBehaviour
             musicManager.endPlayback();
         });
 
+        musicSlider.value = currentConfig.musicVolume;
+        musicSlider.onValueChanged.AddListener((float value) => {
+            musicManager.setVolume(value);
+            currentConfig.musicVolume = value;
+        });
+
+        videoSlider.value = currentConfig.videoVolume;
+        videoSlider.onValueChanged.AddListener((float value) => {
+            videoPlayerController.setVolume(value);
+            currentConfig.videoVolume = value;
+        });
+
+
         musicManager.Initialize(
             currentConfig,
             (Section currentSection, Section nextSection, int lastClipIndex, int nextClipIndex) => {
@@ -57,7 +72,7 @@ public class UIInitializer : MonoBehaviour
 
         branchesDropdown.interactable = currentConfig.playMode == MusicManager.PlayMode.Manual;
         if (currentConfig.videoFilePath != null) {
-            videoPlayerController.startVideo(currentConfig.videoFilePath);
+            videoPlayerController.startVideo(currentConfig.videoFilePath, currentConfig.videoVolume);
         }
 
         musicManager.StartPlayback();

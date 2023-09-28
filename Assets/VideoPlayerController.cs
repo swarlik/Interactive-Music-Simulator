@@ -18,8 +18,15 @@ public class VideoPlayerController : MonoBehaviour
         
     }
 
-    public void startVideo(string path) {
+    public void startVideo(string path, float initialVolume) {
         videoPlayer.url = "file://" + path;
+        videoPlayer.controlledAudioTrackCount = 1;
+        videoPlayer.EnableAudioTrack(0, true);
+        videoPlayer.SetDirectAudioVolume(0, initialVolume);
         videoPlayer.Play();
+    }
+
+    public void setVolume(float volume) {
+        videoPlayer.SetDirectAudioVolume(0, volume);
     }
 }

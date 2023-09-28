@@ -31,6 +31,8 @@ public class PlaybackConfig {
     public string outroFile;
     public float introLength = -1.0f;
     public string videoFilePath;
+    public float musicVolume = 1.0f;
+    public float videoVolume = 0.0f;
 
     public PlaybackConfig(int maxBranches) {
         branchClips = Enumerable.Repeat<AudioClip>(null, maxBranches).ToList();
@@ -50,6 +52,8 @@ public class PlaybackConfig {
         this.outroFile = baseConfig.outroFile != "" ? LocalPathToFullPath(baseConfig.outroFile) : null;
         this.introLength = baseConfig.introLength;
         this.videoFilePath = baseConfig.videoFilePath != "" ? LocalPathToFullPath(baseConfig.videoFilePath) : baseConfig.videoFilePath;
+        this.musicVolume = baseConfig.musicVolume;
+        this.videoVolume = baseConfig.videoVolume;
         // Copy all settings
     }
 

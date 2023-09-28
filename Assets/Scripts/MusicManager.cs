@@ -133,6 +133,7 @@ public class MusicManager : MonoBehaviour
         this.outro = config.outro;
         this.introLength = config.introLength;
         this.onPlaylistChange = onPlaylistChange;
+        setVolume(config.musicVolume);
         initialized = true;
     }
 
@@ -206,6 +207,11 @@ public class MusicManager : MonoBehaviour
     public void endPlayback() {
         nextSection = Section.None;
         changeImmediately();
+    }
+
+    public void setVolume(float volume) {
+        audio1.volume = volume;
+        audio2.volume = volume;
     }
 
     private void dispatchUpdate() {

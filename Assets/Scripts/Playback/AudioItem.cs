@@ -7,6 +7,6 @@ public struct AudioItem {
         Length = length;
     }
 
-    public string Path { get; }
-    public float Length { get; }
+    public string Path { get; set; }
+    public float Length { get; set; }
 }

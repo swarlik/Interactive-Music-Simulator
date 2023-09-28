@@ -1,7 +1,7 @@
 using System;
 
 [System.Serializable]
-public class BranchingConfing : BaseConfig {
+public class BranchingConfig : BaseConfig {
     public static int MAX_BRANCHES = 5;
     public static int DEFAULT_BRANCHES = 2;
 

@@ -46,7 +46,8 @@ public class XFadeSetupManager : MonoBehaviour
         });
 
         saveButton.onClick.AddListener(() => {
-            SaveToConfig();
+            SaveSettings();
+            WriteConfigToFile();
             statusText.GetComponent<FadeText>().SetText("settings saved!");
         });
         
@@ -54,7 +55,13 @@ public class XFadeSetupManager : MonoBehaviour
             LoadFromConfig();
         });
 
+        startButton.onClick.AddListener(() => {
+            SaveSettings();
+            SceneManager.LoadScene("PlayXFade");
+        });
+
         statusText.GetComponent<FadeText>().SetText(loadedFromFile ? "settings loaded!" : "");
+        loadedFromFile = false;
 
         SetupFromConfig(CURRENT_CONFIG);
     }
@@ -113,7 +120,7 @@ public class XFadeSetupManager : MonoBehaviour
         }
     }
 
-    private void SaveToConfig() {
+    private void SaveSettings() {
         string[] sectionPaths = sections
             .Select(section => FilePathUtils.FullPathToLocalPath(section.GetFilePath()))
             .Where(path => path != null && path != "")
@@ -133,7 +140,9 @@ public class XFadeSetupManager : MonoBehaviour
 
         CURRENT_CONFIG.sections = sectionPaths;
         CURRENT_CONFIG.transitions = transitionsInfo;
+    }
 
+    private void WriteConfigToFile() {
         string jsonString = JsonUtility.ToJson(CURRENT_CONFIG);
         Debug.Log(jsonString);
 

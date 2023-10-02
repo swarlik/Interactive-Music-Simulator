@@ -3,15 +3,20 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
+using System.IO;
 using static XFadeConfig;
 
 public class XFadeSetupManager : MonoBehaviour
 {
+    private static string SETTINGS_FILE_NAME = "settings-xfade.json";
     public static XFadeConfig CURRENT_CONFIG;
 
     public Button addSectionButton;
     public Button addTransitionButton;
     public InputField xfadeTimeInput;
+    public Button saveButton;
+    public Button loadButton;
+    public Text statusText;
 
     public GameObject container;
     public GameObject sectionPrefab;
@@ -37,6 +42,18 @@ public class XFadeSetupManager : MonoBehaviour
         addTransitionButton.onClick.AddListener(() => {
             CreateUpload<TransitionUpload>(transitionPrefab, transitions);
         });
+
+        saveButton.onClick.AddListener(() => {
+            SaveToConfig();
+            statusText.text = "settings saved!";
+        });
+        
+        loadButton.onClick.AddListener(() => {
+            LoadFromConfig();
+            statusText.text = "settings loaded!";
+        });
+
+        statusText.text = "";
     }
 
     // Update is called once per frame
@@ -86,6 +103,20 @@ public class XFadeSetupManager : MonoBehaviour
 
         CURRENT_CONFIG.sections = sectionPaths;
         CURRENT_CONFIG.transitions = transitionsInfo;
-        Debug.Log(JsonUtility.ToJson(CURRENT_CONFIG));
+
+        string jsonString = JsonUtility.ToJson(CURRENT_CONFIG);
+        Debug.Log(jsonString);
+
+        using (StreamWriter writer = new StreamWriter(SETTINGS_FILE_NAME))
+        {
+            writer.Write(jsonString);
+        }
+    }
+
+    private void LoadFromConfig() {
+        string configJson = File.ReadAllText($"./{SETTINGS_FILE_NAME}");
+        Debug.Log($"Read file: {configJson}");
+        XFadeConfig config = JsonUtility.FromJson<XFadeConfig>(configJson); 
+        Debug.Log(config);
     }
 }

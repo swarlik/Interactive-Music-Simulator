@@ -42,6 +42,7 @@ public abstract class AudioUpload : MonoBehaviour
         });
 
         SetIndex(index);
+        SetFilePath("");
     }
 
     public void SetIndex(int index) {

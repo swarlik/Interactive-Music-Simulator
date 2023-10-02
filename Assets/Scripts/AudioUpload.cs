@@ -10,6 +10,7 @@ public abstract class AudioUpload : MonoBehaviour
     private int index;
     private Action<string> onLoad;
     private Action onClear;
+    private bool hasLoadedFile;
 
     // Start is called before the first frame update
     void Start()
@@ -55,8 +56,13 @@ public abstract class AudioUpload : MonoBehaviour
         return GetFilePathComponent().text;
     }
 
-    private void SetFilePath(string path) {
+    public void SetFilePath(string path) {
+        hasLoadedFile = path != "";
         GetFilePathComponent().text = path;
+    }
+
+    public bool HasLoadedFile() {
+        return hasLoadedFile;
     }
 
     private Text GetFilePathComponent() {

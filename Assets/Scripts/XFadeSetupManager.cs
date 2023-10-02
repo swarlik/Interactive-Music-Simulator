@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
 using System.IO;
+using UnityEngine.SceneManagement;
 using static XFadeConfig;
 
 public class XFadeSetupManager : MonoBehaviour
@@ -17,6 +18,7 @@ public class XFadeSetupManager : MonoBehaviour
     public Button saveButton;
     public Button loadButton;
     public Text statusText;
+    public Button startButton;
 
     public GameObject container;
     public GameObject sectionPrefab;
@@ -31,9 +33,6 @@ public class XFadeSetupManager : MonoBehaviour
         if (CURRENT_CONFIG == null) {
             CURRENT_CONFIG = new XFadeConfig();
         }
-
-        sections = new List<SectionUpload>();
-        transitions = new List<TransitionUpload>();
 
         addSectionButton.onClick.AddListener(() => {
             CreateUpload<SectionUpload>(sectionPrefab, sections);
@@ -54,6 +53,33 @@ public class XFadeSetupManager : MonoBehaviour
         });
 
         statusText.text = "";
+
+        SetupFromConfig(CURRENT_CONFIG);
+    }
+
+    private void SetupFromConfig(XFadeConfig config) {
+        sections = new List<SectionUpload>();
+        transitions = new List<TransitionUpload>();
+        
+        foreach (string path in config.sections) {
+            SectionUpload section = CreateUpload<SectionUpload>(sectionPrefab, sections);
+            section.SetFilePath(FilePathUtils.LocalPathToFullPath(path));
+        }
+
+        foreach (Transition transitionInfo in config.transitions) {
+            TransitionUpload transition = CreateUpload<TransitionUpload>(transitionPrefab, transitions);
+            transition.SetFilePath(FilePathUtils.LocalPathToFullPath(transitionInfo.file));
+            // Set other values
+        }
+
+        if (config.xfadeTime > 0.0f) {
+            xfadeTimeInput.text = config.xfadeTime.ToString();
+        }
+
+        if (config.sections.Length == 0 && config.transitions.Length == 0) {
+            // Add a default sections if there are no sections or transitiosn
+            CreateUpload<SectionUpload>(sectionPrefab, sections);
+        }
     }
 
     // Update is called once per frame
@@ -61,9 +87,10 @@ public class XFadeSetupManager : MonoBehaviour
     {
         addSectionButton.interactable = sections.Count < XFadeConfig.MAX_SECTIONS;
         addTransitionButton.interactable = transitions.Count < XFadeConfig.MAX_TRANSITIONS;
+        startButton.interactable = sections.Exists(section => section.HasLoadedFile());
     }
 
-    private void CreateUpload<T>(GameObject prefab, List<T> list) where T : AudioUpload {
+    private T CreateUpload<T>(GameObject prefab, List<T> list) where T : AudioUpload {
         GameObject uploadObject = Instantiate(prefab, container.transform);
         T upload = uploadObject.GetComponent<T>();
         upload.Init(list.Count, 
@@ -75,6 +102,7 @@ public class XFadeSetupManager : MonoBehaviour
                 ResetIndices(list);
             });
         list.Add(upload);
+        return upload;
     }
 
     private void ResetIndices<T>(List<T> list) where T : AudioUpload {
@@ -118,5 +146,12 @@ public class XFadeSetupManager : MonoBehaviour
         Debug.Log($"Read file: {configJson}");
         XFadeConfig config = JsonUtility.FromJson<XFadeConfig>(configJson); 
         Debug.Log(config);
+
+        // TODO: Load all files into cache
+
+        // Set config to the loaded config and reload the scene.
+        CURRENT_CONFIG = config;
+        Scene scene = SceneManager.GetActiveScene();
+        SceneManager.LoadScene(scene.name);
     }
 }

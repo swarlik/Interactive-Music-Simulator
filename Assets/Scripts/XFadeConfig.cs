@@ -15,6 +15,6 @@ public class XFadeConfig {
     }
 
     public float xfadeTime;
-    public string[] sections;
-    public Transition[] transitions;
+    public string[] sections = {};
+    public Transition[] transitions = {};
 }

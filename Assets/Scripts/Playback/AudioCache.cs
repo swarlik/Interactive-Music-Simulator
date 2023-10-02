@@ -18,7 +18,7 @@ public class AudioCache {
     }
 
     public AudioClip GetClip(string path) {
-        return cache[path];
+        return cache.ContainsKey(path) ? cache[path] : null;
     }
 
     // Load audio from the filepath into the cache

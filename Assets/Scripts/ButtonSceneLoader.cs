@@ -6,12 +6,13 @@ using UnityEngine.SceneManagement;
 
 public class ButtonSceneLoader : MonoBehaviour
 {
-    public Button button;
     public string sceneName;
+    private Button button;
 
     // Start is called before the first frame update
     void Start()
     {
+        button = GetComponent<Button>();
         button.onClick.AddListener(delegate {
             SceneManager.LoadScene(sceneName);
         });

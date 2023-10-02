@@ -1,7 +1,7 @@
 using System;
 
 [System.Serializable]
-public struct AudioItem {
+public class AudioItem {
     public AudioItem(string path, float length) {
         Path = path;
         Length = length;

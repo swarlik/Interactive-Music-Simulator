@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,6 +11,8 @@ using static XFadeConfig;
 public class XFadeSetupManager : MonoBehaviour
 {
     private static string SETTINGS_FILE_NAME = "settings-xfade.json";
+    private static bool loadedFromFile = false;
+
     public static XFadeConfig CURRENT_CONFIG;
 
     public Button addSectionButton;
@@ -44,15 +47,14 @@ public class XFadeSetupManager : MonoBehaviour
 
         saveButton.onClick.AddListener(() => {
             SaveToConfig();
-            statusText.text = "settings saved!";
+            statusText.GetComponent<FadeText>().SetText("settings saved!");
         });
         
         loadButton.onClick.AddListener(() => {
             LoadFromConfig();
-            statusText.text = "settings loaded!";
         });
 
-        statusText.text = "";
+        statusText.GetComponent<FadeText>().SetText(loadedFromFile ? "settings loaded!" : "");
 
         SetupFromConfig(CURRENT_CONFIG);
     }
@@ -147,11 +149,38 @@ public class XFadeSetupManager : MonoBehaviour
         XFadeConfig config = JsonUtility.FromJson<XFadeConfig>(configJson); 
         Debug.Log(config);
 
-        // TODO: Load all files into cache
+        int filesToLoad = config.sections.Length + config.transitions.Length;
+        int filesLoaded = 0;
+        Action callback = () => {
+            filesLoaded++;
+            if (filesLoaded == filesToLoad) {
+                // Set the config and reload the scene once all files have loaded
+                CURRENT_CONFIG = config;
+                loadedFromFile = true;
+                Scene scene = SceneManager.GetActiveScene();
+                SceneManager.LoadScene(scene.name);
+            }
+        };
 
-        // Set config to the loaded config and reload the scene.
-        CURRENT_CONFIG = config;
-        Scene scene = SceneManager.GetActiveScene();
-        SceneManager.LoadScene(scene.name);
+        foreach (string path in config.sections) {
+            StartCoroutine(AudioCache.Instance().LoadClip(
+                FilePathUtils.LocalPathToFullPath(path),
+                callback,
+                () => {
+                    Debug.Log("error loading file");
+                }
+            ));
+        }
+
+        
+        foreach (Transition transition in config.transitions) {
+            StartCoroutine(AudioCache.Instance().LoadClip(
+                FilePathUtils.LocalPathToFullPath(transition.file),
+                callback,
+                () => {
+                    Debug.Log("error loading file");
+                }
+            ));
+        }
     }
 }

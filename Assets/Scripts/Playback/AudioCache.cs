@@ -23,6 +23,12 @@ public class AudioCache {
 
     // Load audio from the filepath into the cache
     public IEnumerator LoadClip(string path, Action onSuccess, Action onError) {
+        // Break early if the clip has already been loaded
+        if (cache.ContainsKey(path)) {
+            Debug.Log($"File {path} already present in cache");
+            onSuccess();
+            yield break;
+        }
         using (UnityWebRequest req = UnityWebRequestMultimedia.GetAudioClip("file://" + path, AudioType.WAV)) {
             yield return req.SendWebRequest();
             if (req.result == UnityWebRequest.Result.ConnectionError) {

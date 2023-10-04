@@ -53,7 +53,8 @@ public class XFadeUIController : MonoBehaviour
         });
 
         if (currentConfig.videoFilePath != null && currentConfig.videoFilePath != "") {
-            videoPlayerController.startVideo(currentConfig.videoFilePath, currentConfig.videoVolume);
+            videoPlayerController.startVideo(
+                FilePathUtils.LocalPathToFullPath(currentConfig.videoFilePath), currentConfig.videoVolume);
         }
 
         player.StartPlayback(currentConfig, 0);

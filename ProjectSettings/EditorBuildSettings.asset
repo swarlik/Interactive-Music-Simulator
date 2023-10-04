@@ -11,7 +11,10 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Main Scene.unity
     guid: cf383a60e203b4f128281193734d0664
-  - enabled: 0
-    path: Assets/Scenes/IntroScene.unity
-    guid: e4e7ec6f55fcf4dfcabdbe8c58c788e4
+  - enabled: 1
+    path: Assets/Scenes/PlayXFade.unity
+    guid: ed3c3d8fe613e41719011dbde8e3738c
+  - enabled: 1
+    path: Assets/Scenes/SetupXFade.unity
+    guid: e53c41babc2e7472f9598333b88d6784
   m_configObjects: {}

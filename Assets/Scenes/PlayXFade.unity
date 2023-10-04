@@ -1605,7 +1605,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &594476034
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1622,9 +1622,9 @@ RectTransform:
   - {fileID: 1658417809}
   m_Father: {fileID: 1079681555}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 160, y: -300}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &594476035
@@ -3035,10 +3035,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 594476034}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: -127.5}
+  m_SizeDelta: {x: 200, y: 38}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1169166386
 MonoBehaviour:
@@ -4517,7 +4517,7 @@ GameObject:
   - component: {fileID: 1566936411}
   - component: {fileID: 1566936412}
   m_Layer: 0
-  m_Name: UIInitializer
+  m_Name: XFadeUIController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4547,33 +4547,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 1566936410}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a5389f88d26004cff847b66542ecf98c, type: 3}
+  m_Script: {fileID: 11500000, guid: a23125d03c72946a1bff99ac283a3c7b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  musicManager: {fileID: 0}
+  player: {fileID: 1974555634}
   videoPlayerController: {fileID: 1944804663}
-  branchModeDropdown: {fileID: 0}
-  branchesDropdown: {fileID: 618482845}
-  nextBranchText: {fileID: 1218964518}
+  sectionsDropdown: {fileID: 618482845}
+  xfadeTimeInput: {fileID: 0}
+  nextSectionText: {fileID: 1218964518}
   restartButton: {fileID: 990278682}
   stopButton: {fileID: 1928175586}
-  outroButton: {fileID: 1104357993}
   musicSlider: {fileID: 68818871}
   videoSlider: {fileID: 541230122}
-  currentConfig:
-    numBranches: 0
-    hasIntroOutro: 0
-    hasReverb: 0
-    playMode: 0
-    immediate: 0
-    intro: {fileID: 0}
-    outro: {fileID: 0}
-    introFile: 
-    outroFile: 
-    introLength: 0
-    videoFilePath: 
-    musicVolume: 0
-    videoVolume: 0
 --- !u!1 &1582897565
 GameObject:
   m_ObjectHideFlags: 0
@@ -4786,10 +4771,10 @@ RectTransform:
   - {fileID: 2021298818}
   m_Father: {fileID: 594476034}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: -172.5}
+  m_SizeDelta: {x: 200, y: 38}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1658417810
 MonoBehaviour:
@@ -5031,7 +5016,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed0fae2269c3f429f8a2af07972b10c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  button: {fileID: 1668209916}
   sceneName: SetupXFade
 --- !u!1 &1702459490
 GameObject:
@@ -6057,7 +6041,8 @@ AudioSource:
   m_GameObject: {fileID: 1974555630}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: 8424480517170071679, guid: 8e1fbcfa79cba479ab2e3c8ab17fb067,
+    type: 2}
   m_audioClip: {fileID: 0}
   m_PlayOnAwake: 0
   m_Volume: 1
@@ -6153,7 +6138,8 @@ AudioSource:
   m_GameObject: {fileID: 1974555630}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: 8424480517170071679, guid: 8e1fbcfa79cba479ab2e3c8ab17fb067,
+    type: 2}
   m_audioClip: {fileID: 0}
   m_PlayOnAwake: 0
   m_Volume: 1
@@ -6252,6 +6238,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f99c8006969424c21877d35edf330dca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mixer: {fileID: 24100000, guid: 8e1fbcfa79cba479ab2e3c8ab17fb067, type: 2}
 --- !u!1 &1978311645
 GameObject:
   m_ObjectHideFlags: 0

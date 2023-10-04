@@ -77,7 +77,7 @@ public class XFadeSetupManager : MonoBehaviour
 
         foreach (Transition transitionInfo in config.transitions) {
             TransitionUpload transition = CreateUpload<TransitionUpload>(transitionPrefab, transitions);
-            transition.SetFilePath(FilePathUtils.LocalPathToFullPath(transitionInfo.file));
+            transition.SetValues(transitionInfo);
             // Set other values
         }
 

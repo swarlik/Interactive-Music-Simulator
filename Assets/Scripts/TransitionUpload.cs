@@ -26,8 +26,23 @@ public class TransitionUpload : AudioUpload
     public Transition GetInfo() {
         Transition transition = new Transition();
         transition.file = GetFilePath();
-        transition.from = 1;
-        transition.to = 2;
+        // Convert 1-index sections to 0-index
+        transition.from = int.Parse(GetSettingsInput("FromToRow/FromInput").text) - 1;
+        transition.to = int.Parse(GetSettingsInput("FromToRow/ToInput").text) - 1;
+        transition.fadeInTime = float.Parse(GetSettingsInput("FadeInOutRow/FadeInInput").text);
+        transition.fadeOutTime = float.Parse(GetSettingsInput("FadeInOutRow/FadeOutInput").text);
         return transition;
+    }
+
+    public void SetValues(Transition info) {
+        base.SetFilePath(FilePathUtils.LocalPathToFullPath(info.file));
+        GetSettingsInput("FromToRow/FromInput").text = (info.from + 1).ToString();
+        GetSettingsInput("FromToRow/ToInput").text = (info.to + 1).ToString();
+        GetSettingsInput("FadeInOutRow/FadeInInput").text = info.fadeInTime.ToString();
+        GetSettingsInput("FadeInOutRow/FadeOutInput").text = info.fadeOutTime.ToString();
+    }
+
+    private InputField GetSettingsInput(string path) {
+        return gameObject.transform.Find($"Settings/{path}").gameObject.GetComponent<InputField>();
     }
 }

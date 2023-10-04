@@ -26,6 +26,7 @@ public class XFadeSetupManager : MonoBehaviour
     public GameObject container;
     public GameObject sectionPrefab;
     public GameObject transitionPrefab;
+    public VideoUpload videoUpload;
 
     private List<SectionUpload> sections;
     private List<TransitionUpload> transitions;
@@ -86,8 +87,12 @@ public class XFadeSetupManager : MonoBehaviour
         }
 
         if (config.sections.Length == 0 && config.transitions.Length == 0) {
-            // Add a default sections if there are no sections or transitiosn
+            // Add a default sections if there are no sections or transitions
             CreateUpload<SectionUpload>(sectionPrefab, sections);
+        }
+
+        if (config.videoFilePath != null && config.videoFilePath != "") {
+            videoUpload.SetFilePath(FilePathUtils.LocalPathToFullPath(config.videoFilePath));
         }
     }
 
@@ -140,6 +145,7 @@ public class XFadeSetupManager : MonoBehaviour
 
         CURRENT_CONFIG.sections = sectionPaths;
         CURRENT_CONFIG.transitions = transitionsInfo;
+        CURRENT_CONFIG.videoFilePath = FilePathUtils.FullPathToLocalPath(videoUpload.GetFilePath());
     }
 
     private void WriteConfigToFile() {

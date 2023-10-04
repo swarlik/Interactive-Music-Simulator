@@ -14,7 +14,7 @@ public class XFadeConfig {
         public float fadeOutTime;
     }
 
-    public float xfadeTime;
+    public float xfadeTime = 2.0f;
     public string[] sections = {};
     public Transition[] transitions = {};
     public string videoFilePath;

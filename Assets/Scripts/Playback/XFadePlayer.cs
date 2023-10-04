@@ -50,7 +50,7 @@ public class XFadePlayer : MonoBehaviour
             return;
         }
 
-        XFade(config.sections[nextSection], currentTransitionFadeOutTime);
+        XFade(config.sections[nextSection], currentTransitionFadeOutTime, true);
         currentSection = nextSection;
         transitionEndTime = -1.0;
     }
@@ -110,7 +110,7 @@ public class XFadePlayer : MonoBehaviour
         // If there's no transition, fade directly into the next section
         if (transition == null) {
             Debug.Log($"No transition for {currentSection} to {nextSection}");
-            XFade(config.sections[section], config.xfadeTime);
+            XFade(config.sections[section], config.xfadeTime, true);
             currentSection = nextSection;
             return;
         }
@@ -122,8 +122,10 @@ public class XFadePlayer : MonoBehaviour
         }
 
         // If there is a transition, fade into the transition clip, and queue a fade into the next section
-        XFade(transition.file, transition.fadeInTime);
-        transitionEndTime = AudioSettings.dspTime + transitionClip.length - transition.fadeOutTime;
+        XFade(transition.file, transition.fadeInTime, false);
+        transitionEndTime = Math.Max(
+            AudioSettings.dspTime + transition.fadeInTime, 
+            AudioSettings.dspTime + transitionClip.length - transition.fadeOutTime);
         currentTransitionFadeOutTime = transition.fadeOutTime;
     }
 
@@ -152,7 +154,7 @@ public class XFadePlayer : MonoBehaviour
         mixer.SetFloat("MusicVolume", volume == 0.0f ? -100 : Mathf.Log10(volume) * 20);
     }
 
-    private void XFade(string nextFile, float xfadeTime) {
+    private void XFade(string nextFile, float xfadeTime, bool loopNext) {
         if (CurrentAudio().isPlaying) {
             fadeInCoroutine = StartCoroutine(FadeOut(CurrentAudio(), xfadeTime));
         }
@@ -165,6 +167,7 @@ public class XFadePlayer : MonoBehaviour
 
         AudioSource nextAudio = NextAudio();
         nextAudio.clip = clip;
+        nextAudio.loop = loopNext;
         fadeOutCoroutine = StartCoroutine(FadeIn(nextAudio, xfadeTime));
 
         FlipAudio();

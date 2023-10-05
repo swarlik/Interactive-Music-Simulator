@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,7 +7,8 @@ using System.IO;
 using UnityEditor;
 using UnityEngine.Networking;
 using System.Linq;
-using static MusicManager;
+using static XFadePlayer;
+using static XFadeConfig;
 
 public class XFadeUIController : MonoBehaviour
 {
@@ -66,18 +68,7 @@ public class XFadeUIController : MonoBehaviour
         sectionsDropdown.interactable = !player.IsFading() && !player.InTransition();
         restartButton.interactable = !player.IsPlaying();
         stopButton.interactable = player.IsPlaying();
-
-        string text = "";
-        if (!player.IsPlaying()) {
-            text = "Stopped";
-        } else if (player.InTransition()) {
-            text = $"Transitioning from {(player.GetCurrentSection() + 1)} to {(player.GetNextSection() + 1)}";
-        } else if (player.IsFading()) {
-            text = $"Crossfading into Section {(player.GetCurrentSection() + 1)}";
-        } else {
-            text = $"Playing Section {(player.GetCurrentSection() + 1)}";
-        }
-        nextSectionText.text = text;
+        nextSectionText.text = GetPlayingText();
     }
 
     private void setupSectionsDropdown(Dropdown sectionsDropdown) {
@@ -93,5 +84,28 @@ public class XFadeUIController : MonoBehaviour
             Debug.Log($"Switching to section {value + 1}");
             player.GoToSection(value);
         });
+    }
+
+    private string GetPlayingText() {
+        if (!player.IsPlaying()) {
+            return "Stopped";
+        }
+
+        Segment currentSegment = player.GetCurrentSegment();
+        if (currentSegment == Segment.None) {
+            return "";
+        }
+
+        if (currentSegment == Segment.Intro || currentSegment == Segment.Outro) {
+            return $"Playing {currentSegment.ToString()}";
+        }
+
+        if (currentSegment == Segment.Transition) {
+            Transition t = (Transition) player.GetCurrent();
+            return $"Transitioning from {(t.from + 1)} to {(t.to + 1)}";
+        }
+
+        int section = Array.IndexOf<Section>(currentConfig.sections, (Section) player.GetCurrent()) + 1;
+        return player.IsFading() ? $"Fading into Section {section}" : $"Playing Section {section}";
     }
 }

@@ -9,24 +9,36 @@ using static XFadeConfig;
 
 public class XFadePlayer : MonoBehaviour
 {
+    private static float OFFSET = 0.04f;
     public AudioMixer mixer;
+
+    public enum Segment {
+        Intro,
+        Section,
+        Transition,
+        Outro,
+        None
+    }
 
     private AudioSource audio1;
     private AudioSource audio2;
     private bool audioSourceFlip = true;
-    private bool isFading = false;
     private bool isPlaying = false;
 
     private Coroutine fadeInCoroutine;
     private Coroutine fadeOutCoroutine;
 
-    private int currentSection;
-    private int nextSection;
+    private Segment currentSegment;
+    private Segment nextSegment;
 
-    private double transitionEndTime = -1.0;
-    private float currentTransitionFadeOutTime;
+    private Fadeable current;
+    private Fadeable next;
+    private int startSection;
 
-    private float currentVolume = 1.0f;
+    private int currentSectionIndex;
+    private int nextSectionIndex;
+    private Transition nextTransition;
+    private double nextEventTime;
 
     private XFadeConfig config;
 
@@ -37,46 +49,92 @@ public class XFadePlayer : MonoBehaviour
             return;
         }
 
-        Debug.Log("Found 2 audio sources");
-
         audio1 = audioSources[0];
         audio2 = audioSources[1];
-        audio1.loop = true;
-        audio2.loop = true;
+        audio1.loop = false;
+        audio2.loop = false;
     }
 
     void Update() {
-        if (transitionEndTime == -1.0 || AudioSettings.dspTime < transitionEndTime) {
+        if (!isPlaying || AudioSettings.dspTime + OFFSET < nextEventTime) {
             return;
         }
 
-        XFade(config.sections[nextSection], currentTransitionFadeOutTime, true);
-        currentSection = nextSection;
-        transitionEndTime = -1.0;
+        if (next == null) {
+            isPlaying = false;
+            return;
+        }
+
+    
+        AudioClip nextClip = AudioCache.Instance().GetClip(FilePathUtils.LocalPathToFullPath(next.file));
+        if (nextClip == null) {
+            Debug.Log($"No audio loaded for file {next.file}");
+            return;
+        }
+
+        Debug.Log($"About to play current: {currentSegment.ToString()} next: {nextSegment.ToString()}");
+
+        // If changing to a different segment, perform a crossfade. Otherwise, just switch audio sources
+        if (current != null && current != next) {
+            Debug.Log($"Performing xfade");
+            XFade(nextClip, current.fadeOutTime, next.fadeInTime);
+        } else {
+            NextAudio().volume = 1.0f;
+            NextAudio().clip = nextClip;
+            NextAudio().Play();
+            FlipAudio();
+        }
+
+
+        // Calculate the following segment.
+        current = next;
+        currentSegment = nextSegment;
+
+        float playLength = config.hasReverb && current.loopLength > 0 ? current.loopLength : nextClip.length;
+
+        switch (currentSegment) {
+            case Segment.Intro:
+                next = config.sections[startSection];
+                nextSegment = Segment.Section;
+                break;
+            case Segment.Transition:
+                next = config.sections[((Transition) current).to];
+                playLength = Math.Max(current.fadeInTime, nextClip.length - current.fadeOutTime);
+                nextSegment = Segment.Section;
+                break;
+            case Segment.Outro:
+                next = null;
+                nextSegment = Segment.None;
+                break;
+        }
+
+        nextEventTime += playLength;
+        Debug.Log($"Next has reverb: {config.hasReverb} loop length: {current.loopLength}. current audio time: {AudioSettings.dspTime} next event time: {nextEventTime}");
     }
 
     public void StartPlayback(XFadeConfig config, int startSection) {
         this.config = config;
+        Debug.Log($"Starting playback with {JsonUtility.ToJson(config)}");
         
         if (config.sections.Length <= startSection) {
-            Debug.Log("No sections to play!");
+            Debug.Log("Start section out of range!");
             return;
         }
 
-        // Play the first section
-        AudioClip clip = AudioCache.Instance()
-            .GetClip(FilePathUtils.LocalPathToFullPath(config.sections[startSection]));
-        if (clip == null) {
-            Debug.Log("Audio not loaded for first section");
-            return;
+        currentSegment = Segment.None;
+        if (config.intro != null && config.intro.file != "") {
+            nextSegment = Segment.Intro;
+            next = config.intro;
+        } else {
+            nextSegment = Segment.Section;
+            next = config.sections[startSection];
         }
+
+        this.startSection = startSection;
+        nextEventTime = AudioSettings.dspTime + OFFSET;
+        isPlaying = true;
 
         SetVolume(config.musicVolume);
-        CurrentAudio().clip = clip;
-        CurrentAudio().volume = currentVolume;
-        CurrentAudio().Play();
-        currentSection = startSection;
-        isPlaying = true;
     }
 
     public void StopPlayback() {
@@ -87,7 +145,8 @@ public class XFadePlayer : MonoBehaviour
         if (NextAudio().isPlaying) {
             NextAudio().Stop();
         }
-        transitionEndTime = -1.0;
+        current = null;
+        next = null;
         isPlaying = false;
     }
 
@@ -100,37 +159,43 @@ public class XFadePlayer : MonoBehaviour
             return;
         }
 
-        nextSection = section;
+        nextSectionIndex = section;
 
         Transition transition = null;
         if (config.transitions != null) {
-            transition = config.transitions.FirstOrDefault(t => t.from == currentSection && t.to == nextSection);
+            transition = config.transitions.FirstOrDefault(t => t.from == currentSectionIndex && t.to == section);
         }
 
-        // If there's no transition, fade directly into the next section
-        if (transition == null) {
-            Debug.Log($"No transition for {currentSection} to {nextSection}");
-            XFade(config.sections[section], config.xfadeTime, true);
-            currentSection = nextSection;
-            return;
+        if (transition != null) {
+            next = transition;
+            nextSegment = Segment.Transition;
+        } else {
+            Debug.Log($"No transition for {currentSectionIndex} to {nextSectionIndex}");
+            next = config.sections[section];
+            nextSegment = Segment.Section;
         }
 
-        AudioClip transitionClip = AudioCache.Instance().GetClip(FilePathUtils.LocalPathToFullPath(transition.file));
-        if (transitionClip == null) {
-            Debug.Log($"No transition audio loaded: {transition.file}");
-            return;
-        }
-
-        // If there is a transition, fade into the transition clip, and queue a fade into the next section
-        XFade(transition.file, transition.fadeInTime, false);
-        transitionEndTime = Math.Max(
-            AudioSettings.dspTime + transition.fadeInTime, 
-            AudioSettings.dspTime + transitionClip.length - transition.fadeOutTime);
-        currentTransitionFadeOutTime = transition.fadeOutTime;
+        nextEventTime = AudioSettings.dspTime + OFFSET;
     }
 
     public bool IsFading() {
-        return isFading;
+        return fadeInCoroutine != null || fadeOutCoroutine != null;
+    }
+
+    public Fadeable GetCurrent() {
+        return current;
+    }
+
+    public Segment GetCurrentSegment() {
+        return currentSegment;
+    }
+
+    public Fadeable GetNext() {
+        return next;
+    }
+
+    public Segment GetNextSegment() {
+        return nextSegment;
     }
 
     public bool IsPlaying() {
@@ -138,15 +203,15 @@ public class XFadePlayer : MonoBehaviour
     }
 
     public int GetCurrentSection() {
-        return currentSection;
+        return currentSectionIndex;
     }
 
     public int GetNextSection() {
-        return nextSection;
+        return nextSectionIndex;
     }
 
     public bool InTransition() {
-        return transitionEndTime != -1.0;
+        return currentSegment == Segment.Transition;
     }
 
     public void SetVolume(float volume) {
@@ -154,21 +219,14 @@ public class XFadePlayer : MonoBehaviour
         mixer.SetFloat("MusicVolume", volume == 0.0f ? -100 : Mathf.Log10(volume) * 20);
     }
 
-    private void XFade(string nextFile, float xfadeTime, bool loopNext) {
+    private void XFade(AudioClip nextClip, float fadeOutTime, float fadeInTime) {
         if (CurrentAudio().isPlaying) {
-            fadeInCoroutine = StartCoroutine(FadeOut(CurrentAudio(), xfadeTime));
-        }
-
-        AudioClip clip = AudioCache.Instance().GetClip(FilePathUtils.LocalPathToFullPath(nextFile));
-        if (clip == null) {
-            Debug.Log($"No audio loaded for file {nextFile}");
-            return;
+            fadeOutCoroutine = StartCoroutine(FadeOut(CurrentAudio(), fadeOutTime));
         }
 
         AudioSource nextAudio = NextAudio();
-        nextAudio.clip = clip;
-        nextAudio.loop = loopNext;
-        fadeOutCoroutine = StartCoroutine(FadeIn(nextAudio, xfadeTime));
+        nextAudio.clip = nextClip;
+        fadeInCoroutine = StartCoroutine(FadeIn(nextAudio, fadeInTime));
 
         FlipAudio();
     }
@@ -182,20 +240,14 @@ public class XFadePlayer : MonoBehaviour
     }
 
     private IEnumerator Fade(AudioSource audio, float fadeTime, bool fadeIn) {
-        isFading = true;
-
-        if (fadeTime <= 0.0f) {
-            Debug.Log("Invalid fade time");
-            yield break;
-        }
-
+        Debug.Log($"Starting fade in: {fadeIn} for {fadeTime} seconds");
         if (fadeIn) {
             audio.volume = 0;
             audio.Play();
         }
 
         while (fadeIn ? (audio.volume < 1.0f) : (audio.volume > 0.0f)) {
-            float diff = Time.deltaTime / fadeTime;
+            float diff = fadeTime == 0.0f ? 1.0f : Time.deltaTime / fadeTime;
             audio.volume += fadeIn ? diff : (-1.0f * diff);
             yield return null;
         }
@@ -209,7 +261,7 @@ public class XFadePlayer : MonoBehaviour
         } else {
             fadeOutCoroutine = null;
         }
-        isFading = false;
+        Debug.Log($"Finished fade in: {fadeIn}");
     }
 
     private AudioSource CurrentAudio() {
@@ -227,11 +279,11 @@ public class XFadePlayer : MonoBehaviour
     private void StopFades() {
         if (fadeInCoroutine != null) {
             StopCoroutine(fadeInCoroutine);
+            fadeInCoroutine = null;
         }
         if (fadeOutCoroutine != null) {
             StopCoroutine(fadeOutCoroutine);
+            fadeOutCoroutine = null;
         }
-
-        isFading = false;
     }
 }

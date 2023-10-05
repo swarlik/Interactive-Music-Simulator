@@ -22,6 +22,7 @@ public class XFadeSetupManager : MonoBehaviour
     public Button loadButton;
     public Text statusText;
     public Button startButton;
+    public Toggle reverbToggle;
 
     public GameObject container;
     public GameObject sectionPrefab;
@@ -71,9 +72,9 @@ public class XFadeSetupManager : MonoBehaviour
         sections = new List<SectionUpload>();
         transitions = new List<TransitionUpload>();
         
-        foreach (string path in config.sections) {
+        foreach (Section sectionInfo in config.sections) {
             SectionUpload section = CreateUpload<SectionUpload>(sectionPrefab, sections);
-            section.SetFilePath(FilePathUtils.LocalPathToFullPath(path));
+            section.SetValues(sectionInfo);
         }
 
         foreach (Transition transitionInfo in config.transitions) {
@@ -94,6 +95,8 @@ public class XFadeSetupManager : MonoBehaviour
         if (config.videoFilePath != null && config.videoFilePath != "") {
             videoUpload.SetFilePath(FilePathUtils.LocalPathToFullPath(config.videoFilePath));
         }
+
+        reverbToggle.isOn = config.hasReverb;
     }
 
     // Update is called once per frame
@@ -126,10 +129,12 @@ public class XFadeSetupManager : MonoBehaviour
     }
 
     private void SaveSettings() {
-        string[] sectionPaths = sections
-            .Select(section => FilePathUtils.FullPathToLocalPath(section.GetFilePath()))
-            .Where(path => path != null && path != "")
-            .ToArray();
+        Section[] sectionsInfo = sections.Select(section => {
+                Section info = section.GetInfo();
+                info.file = FilePathUtils.FullPathToLocalPath(info.file);
+                return info;
+            }
+        ).ToArray();
         Transition[] transitionsInfo = transitions.Select(transition => {
                 Transition info = transition.GetInfo();
                 info.file = FilePathUtils.FullPathToLocalPath(info.file);
@@ -143,9 +148,10 @@ public class XFadeSetupManager : MonoBehaviour
             CURRENT_CONFIG.xfadeTime = time;
         }
 
-        CURRENT_CONFIG.sections = sectionPaths;
+        CURRENT_CONFIG.sections = sectionsInfo;
         CURRENT_CONFIG.transitions = transitionsInfo;
         CURRENT_CONFIG.videoFilePath = FilePathUtils.FullPathToLocalPath(videoUpload.GetFilePath());
+        CURRENT_CONFIG.hasReverb = reverbToggle.isOn;
     }
 
     private void WriteConfigToFile() {
@@ -177,9 +183,9 @@ public class XFadeSetupManager : MonoBehaviour
             }
         };
 
-        foreach (string path in config.sections) {
+        foreach (Section section in config.sections) {
             StartCoroutine(AudioCache.Instance().LoadClip(
-                FilePathUtils.LocalPathToFullPath(path),
+                FilePathUtils.LocalPathToFullPath(section.file),
                 callback,
                 () => {
                     Debug.Log("error loading file");

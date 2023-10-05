@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System;
+using static XFadeConfig;
 
 public class SectionUpload : AudioUpload
 {
@@ -20,5 +21,30 @@ public class SectionUpload : AudioUpload
 
     protected override string GetLabelType() {
         return "Section";
+    }
+
+    public void ShowHideLoopLength(bool show) {
+        GetSettingsInput("LengthInputRow/LengthInput").interactable = show;
+    }
+
+    public Section GetInfo() {
+        Section section = new Section();
+        section.file = GetFilePath();
+        // Convert 1-index sections to 0-index
+        section.loopLength = float.Parse(GetSettingsInput("LengthInputRow/LengthInput").text);
+        section.fadeInTime = float.Parse(GetSettingsInput("FadeInOutRow/FadeInInput").text);
+        section.fadeOutTime = float.Parse(GetSettingsInput("FadeInOutRow/FadeOutInput").text);
+        return section;
+    }
+
+    public void SetValues(Section info) {
+        base.SetFilePath(FilePathUtils.LocalPathToFullPath(info.file));
+        GetSettingsInput("LengthInputRow/LengthInput").text = info.loopLength.ToString();
+        GetSettingsInput("FadeInOutRow/FadeInInput").text = info.fadeInTime.ToString();
+        GetSettingsInput("FadeInOutRow/FadeOutInput").text = info.fadeOutTime.ToString();
+    }
+
+    private InputField GetSettingsInput(string path) {
+        return gameObject.transform.Find($"Settings/{path}").gameObject.GetComponent<InputField>();
     }
 }

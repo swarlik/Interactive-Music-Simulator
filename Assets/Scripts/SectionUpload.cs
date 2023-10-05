@@ -19,25 +19,31 @@ public class SectionUpload : AudioUpload
         
     }
 
-    protected override string GetLabelType() {
-        return "Section";
+    protected override string GetLabel() {
+        return "Section " + (index + 1);
     }
 
     public void ShowHideLoopLength(bool show) {
         GetSettingsInput("LengthInputRow/LengthInput").interactable = show;
     }
 
-    public Section GetInfo() {
+    public Fadeable GetInfo() {
         Section section = new Section();
         section.file = GetFilePath();
         // Convert 1-index sections to 0-index
-        section.loopLength = float.Parse(GetSettingsInput("LengthInputRow/LengthInput").text);
-        section.fadeInTime = float.Parse(GetSettingsInput("FadeInOutRow/FadeInInput").text);
-        section.fadeOutTime = float.Parse(GetSettingsInput("FadeInOutRow/FadeOutInput").text);
+        if (GetSettingsInput("LengthInputRow/LengthInput").text != "") {
+            section.loopLength = float.Parse(GetSettingsInput("LengthInputRow/LengthInput").text);
+        }
+        if (GetSettingsInput("FadeInOutRow/FadeInInput").text != "") {
+            section.fadeInTime = float.Parse(GetSettingsInput("FadeInOutRow/FadeInInput").text);
+        }
+        if (GetSettingsInput("FadeInOutRow/FadeOutInput").text != "") {
+            section.fadeOutTime = float.Parse(GetSettingsInput("FadeInOutRow/FadeOutInput").text);
+        }
         return section;
     }
 
-    public void SetValues(Section info) {
+    public void SetValues(Fadeable info) {
         base.SetFilePath(FilePathUtils.LocalPathToFullPath(info.file));
         GetSettingsInput("LengthInputRow/LengthInput").text = info.loopLength.ToString();
         GetSettingsInput("FadeInOutRow/FadeInInput").text = info.fadeInTime.ToString();

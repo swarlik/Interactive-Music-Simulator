@@ -62,6 +62,7 @@ public class XFadePlayer : MonoBehaviour
 
         if (next == null) {
             isPlaying = false;
+            currentSegment = Segment.None;
             return;
         }
 
@@ -123,15 +124,12 @@ public class XFadePlayer : MonoBehaviour
 
         currentSegment = Segment.None;
         if (config.intro != null && config.intro.file != "") {
-            nextSegment = Segment.Intro;
-            next = config.intro;
+            SetNext(config.intro, Segment.Intro);
         } else {
-            nextSegment = Segment.Section;
-            next = config.sections[startSection];
+            SetNext(config.sections[startSection], Segment.Section);
         }
 
         this.startSection = startSection;
-        nextEventTime = AudioSettings.dspTime + OFFSET;
         isPlaying = true;
 
         SetVolume(config.musicVolume);
@@ -146,7 +144,9 @@ public class XFadePlayer : MonoBehaviour
             NextAudio().Stop();
         }
         current = null;
+        currentSegment = Segment.None;
         next = null;
+        nextSegment = Segment.None;
         isPlaying = false;
     }
 
@@ -167,15 +167,24 @@ public class XFadePlayer : MonoBehaviour
         }
 
         if (transition != null) {
-            next = transition;
-            nextSegment = Segment.Transition;
+            SetNext(transition, Segment.Transition);
         } else {
             Debug.Log($"No transition for {currentSectionIndex} to {nextSectionIndex}");
-            next = config.sections[section];
-            nextSegment = Segment.Section;
+            SetNext(config.sections[section], Segment.Section);
+        }
+    }
+
+    public void GoToOutro() {
+        if (!isPlaying) {
+            return;
         }
 
-        nextEventTime = AudioSettings.dspTime + OFFSET;
+        if (config.outro == null) {
+            Debug.Log("No outro");
+            return;
+        }
+
+        SetNext(config.outro, Segment.Outro);
     }
 
     public bool IsFading() {
@@ -217,6 +226,12 @@ public class XFadePlayer : MonoBehaviour
     public void SetVolume(float volume) {
         Debug.Log($"Volume slider value: {volume}; setting volume to {(Mathf.Log10(volume) * 20)}");
         mixer.SetFloat("MusicVolume", volume == 0.0f ? -100 : Mathf.Log10(volume) * 20);
+    }
+
+    private void SetNext(Fadeable next, Segment nextSegment) {
+        this.next = next;
+        this.nextSegment = nextSegment;
+        nextEventTime = AudioSettings.dspTime + OFFSET;
     }
 
     private void XFade(AudioClip nextClip, float fadeOutTime, float fadeInTime) {

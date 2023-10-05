@@ -2367,15 +2367,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   addSectionButton: {fileID: 286004907}
   addTransitionButton: {fileID: 368050991}
+  addIntroButton: {fileID: 634205061}
+  addOutroButton: {fileID: 1345716270}
   xfadeTimeInput: {fileID: 952582613}
   saveButton: {fileID: 2020655466}
   loadButton: {fileID: 497792724}
   statusText: {fileID: 175544464}
   startButton: {fileID: 1832751296}
+  reverbToggle: {fileID: 394084355}
   container: {fileID: 1142006154}
   sectionPrefab: {fileID: 7329107389194432442, guid: 7362a594360214626b1fedf0dc5996ad,
     type: 3}
   transitionPrefab: {fileID: 3867861512616125530, guid: e5d6e212c43bd49ecb7798aa39baf3c0,
+    type: 3}
+  introPrefab: {fileID: 7329107389194432442, guid: 62f36467781a44380a8fa4e41e501ba5,
+    type: 3}
+  outroPrefab: {fileID: 7329107389194432442, guid: 680010dc22d364bb4a8cc6debbdead3d,
     type: 3}
   videoUpload: {fileID: 914729053}
 --- !u!1 &750191252

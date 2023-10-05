@@ -21,6 +21,7 @@ public class XFadeUIController : MonoBehaviour
 
     public Button restartButton;
     public Button stopButton;
+    public Button outroButton;
 
     public Slider musicSlider;
     public Slider videoSlider;
@@ -40,6 +41,10 @@ public class XFadeUIController : MonoBehaviour
 
         stopButton.onClick.AddListener(() => {
             player.StopPlayback();
+        });
+
+        outroButton.onClick.AddListener(() => {
+            player.GoToOutro();
         });
 
         musicSlider.value = currentConfig.musicVolume;
@@ -65,9 +70,12 @@ public class XFadeUIController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        sectionsDropdown.interactable = !player.IsFading() && !player.InTransition();
+        bool changeInProgress = player.IsFading() || player.InTransition();
+        sectionsDropdown.interactable = !changeInProgress && player.GetCurrentSegment() != Segment.Outro;
         restartButton.interactable = !player.IsPlaying();
         stopButton.interactable = player.IsPlaying();
+        outroButton.interactable = 
+            currentConfig.intro != null && player.IsPlaying() && player.GetCurrentSegment() != Segment.Outro && !changeInProgress;
         nextSectionText.text = GetPlayingText();
     }
 
@@ -105,7 +113,7 @@ public class XFadeUIController : MonoBehaviour
             return $"Transitioning from {(t.from + 1)} to {(t.to + 1)}";
         }
 
-        int section = Array.IndexOf<Section>(currentConfig.sections, (Section) player.GetCurrent()) + 1;
+        int section = Array.IndexOf<Fadeable>(currentConfig.sections, player.GetCurrent()) + 1;
         return player.IsFading() ? $"Fading into Section {section}" : $"Playing Section {section}";
     }
 }

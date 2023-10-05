@@ -7,8 +7,7 @@ using SimpleFileBrowser;
 
 public abstract class AudioUpload : MonoBehaviour
 {
-    private int index;
-    private Action<string> onLoad;
+    protected int index;
     private Action onClear;
     private bool hasLoadedFile;
 
@@ -24,11 +23,10 @@ public abstract class AudioUpload : MonoBehaviour
         
     }
 
-    protected abstract string GetLabelType();
+    protected abstract string GetLabel();
 
-    public void Init(int index, Action<string> onLoad, Action onClear) {
+    public void Init(int index, Action onClear) {
         this.index = index;
-        this.onLoad = onLoad;
         this.onClear = onClear;
 
         Button uploadButton = gameObject.transform.Find("UploadRow/Upload").gameObject.GetComponent<Button>();
@@ -49,7 +47,7 @@ public abstract class AudioUpload : MonoBehaviour
     public void SetIndex(int index) {
         this.index = index;
         Text sectionLabel = gameObject.transform.Find("UploadRow/SectionLabel").gameObject.GetComponent<Text>();
-        sectionLabel.text = $"{GetLabelType()} {(index + 1)}:";
+        sectionLabel.text = $"{(GetLabel())}:";
     }
 
     public string GetFilePath() {

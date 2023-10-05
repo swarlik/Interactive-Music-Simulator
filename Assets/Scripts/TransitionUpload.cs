@@ -19,8 +19,8 @@ public class TransitionUpload : AudioUpload
         
     }
 
-    protected override string GetLabelType() {
-        return "Transition";
+    protected override string GetLabel() {
+        return "Transition " + (index + 1);
     }
 
     public Transition GetInfo() {

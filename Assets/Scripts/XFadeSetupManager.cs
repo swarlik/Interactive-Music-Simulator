@@ -17,6 +17,8 @@ public class XFadeSetupManager : MonoBehaviour
 
     public Button addSectionButton;
     public Button addTransitionButton;
+    public Button addIntroButton;
+    public Button addOutroButton;
     public InputField xfadeTimeInput;
     public Button saveButton;
     public Button loadButton;
@@ -27,10 +29,14 @@ public class XFadeSetupManager : MonoBehaviour
     public GameObject container;
     public GameObject sectionPrefab;
     public GameObject transitionPrefab;
+    public GameObject introPrefab;
+    public GameObject outroPrefab;
     public VideoUpload videoUpload;
 
     private List<SectionUpload> sections;
     private List<TransitionUpload> transitions;
+    private IntroUpload intro;
+    private OutroUpload outro;
 
     // Start is called before the first frame update
     void Start()
@@ -45,6 +51,14 @@ public class XFadeSetupManager : MonoBehaviour
 
         addTransitionButton.onClick.AddListener(() => {
             CreateUpload<TransitionUpload>(transitionPrefab, transitions);
+        });
+
+        addIntroButton.onClick.AddListener(() => {
+           CreateIntro();
+        });
+
+        addOutroButton.onClick.AddListener(() => {
+            CreateOutro();
         });
 
         saveButton.onClick.AddListener(() => {
@@ -72,7 +86,7 @@ public class XFadeSetupManager : MonoBehaviour
         sections = new List<SectionUpload>();
         transitions = new List<TransitionUpload>();
         
-        foreach (Section sectionInfo in config.sections) {
+        foreach (Fadeable sectionInfo in config.sections) {
             SectionUpload section = CreateUpload<SectionUpload>(sectionPrefab, sections);
             section.SetValues(sectionInfo);
         }
@@ -80,7 +94,16 @@ public class XFadeSetupManager : MonoBehaviour
         foreach (Transition transitionInfo in config.transitions) {
             TransitionUpload transition = CreateUpload<TransitionUpload>(transitionPrefab, transitions);
             transition.SetValues(transitionInfo);
-            // Set other values
+        }
+
+        if (config.intro != null) {
+            CreateIntro();
+            intro.SetValues(config.intro);
+        }
+
+        if (config.outro != null) {
+            CreateOutro();
+            outro.SetValues(config.outro);
         }
 
         if (config.xfadeTime > 0.0f) {
@@ -105,21 +128,39 @@ public class XFadeSetupManager : MonoBehaviour
         addSectionButton.interactable = sections.Count < XFadeConfig.MAX_SECTIONS;
         addTransitionButton.interactable = transitions.Count < XFadeConfig.MAX_TRANSITIONS;
         startButton.interactable = sections.Exists(section => section.HasLoadedFile());
+        addIntroButton.interactable = intro == null;
+        addOutroButton.interactable = outro == null;
     }
 
     private T CreateUpload<T>(GameObject prefab, List<T> list) where T : AudioUpload {
         GameObject uploadObject = Instantiate(prefab, container.transform);
         T upload = uploadObject.GetComponent<T>();
         upload.Init(list.Count, 
-            (string path) => { 
-                Debug.Log(path); 
-            }, 
             () => { 
                 list.Remove(upload);
                 ResetIndices(list);
             });
         list.Add(upload);
         return upload;
+    }
+
+    private void CreateIntro() {
+        GameObject introObject = Instantiate(introPrefab, container.transform);
+        // Insert at the top of the container
+        introObject.transform.SetSiblingIndex(0);
+        intro = introObject.GetComponent<IntroUpload>();
+        intro.Init(0, () => {
+            intro = null;
+        });
+    }
+
+    private void CreateOutro() {
+        GameObject outroObject = Instantiate(outroPrefab, container.transform);
+        // Insert at the top of the container
+        outro = outroObject.GetComponent<OutroUpload>();
+        outro.Init(0, () => {
+            outro = null;
+        });
     }
 
     private void ResetIndices<T>(List<T> list) where T : AudioUpload {
@@ -129,8 +170,8 @@ public class XFadeSetupManager : MonoBehaviour
     }
 
     private void SaveSettings() {
-        Section[] sectionsInfo = sections.Select(section => {
-                Section info = section.GetInfo();
+        Fadeable[] sectionsInfo = sections.Select(section => {
+                Fadeable info = section.GetInfo();
                 info.file = FilePathUtils.FullPathToLocalPath(info.file);
                 return info;
             }
@@ -152,6 +193,17 @@ public class XFadeSetupManager : MonoBehaviour
         CURRENT_CONFIG.transitions = transitionsInfo;
         CURRENT_CONFIG.videoFilePath = FilePathUtils.FullPathToLocalPath(videoUpload.GetFilePath());
         CURRENT_CONFIG.hasReverb = reverbToggle.isOn;
+        if (intro != null) {
+            Fadeable introInfo = intro.GetInfo();
+            introInfo.file = FilePathUtils.FullPathToLocalPath(introInfo.file);
+            CURRENT_CONFIG.intro = introInfo;
+        }
+
+        if (outro != null) {
+            Fadeable outroInfo = outro.GetInfo();
+            outroInfo.file = FilePathUtils.FullPathToLocalPath(outroInfo.file);
+            CURRENT_CONFIG.outro = outroInfo;   
+        }
     }
 
     private void WriteConfigToFile() {
@@ -170,7 +222,7 @@ public class XFadeSetupManager : MonoBehaviour
         XFadeConfig config = JsonUtility.FromJson<XFadeConfig>(configJson); 
         Debug.Log(config);
 
-        int filesToLoad = config.sections.Length + config.transitions.Length;
+        int filesToLoad = config.sections.Length + config.transitions.Length + 2; // intro & outro
         int filesLoaded = 0;
         Action callback = () => {
             filesLoaded++;
@@ -183,7 +235,7 @@ public class XFadeSetupManager : MonoBehaviour
             }
         };
 
-        foreach (Section section in config.sections) {
+        foreach (Fadeable section in config.sections) {
             StartCoroutine(AudioCache.Instance().LoadClip(
                 FilePathUtils.LocalPathToFullPath(section.file),
                 callback,
@@ -202,6 +254,30 @@ public class XFadeSetupManager : MonoBehaviour
                     Debug.Log("error loading file");
                 }
             ));
+        }
+
+        if (config.intro != null) {
+            StartCoroutine(AudioCache.Instance().LoadClip(
+                FilePathUtils.LocalPathToFullPath(config.intro.file),
+                callback,
+                () => {
+                    Debug.Log("error loading file");
+                }
+            ));
+        } else {
+            callback();
+        }
+
+        if (config.outro != null) {
+            StartCoroutine(AudioCache.Instance().LoadClip(
+                FilePathUtils.LocalPathToFullPath(config.outro.file),
+                callback,
+                () => {
+                    Debug.Log("error loading file");
+                }
+            ));
+        } else {
+            callback();
         }
     }
 }

@@ -25,6 +25,7 @@ public class XFadeSetupManager : MonoBehaviour
     public Text statusText;
     public Button startButton;
     public Toggle reverbToggle;
+    public Button backToMainButton;
 
     public GameObject container;
     public GameObject sectionPrefab;
@@ -76,6 +77,11 @@ public class XFadeSetupManager : MonoBehaviour
             SceneManager.LoadScene("PlayXFade");
         });
 
+        backToMainButton.onClick.AddListener(() => {
+            SaveSettings();
+            SceneManager.LoadScene("Launch");
+        });
+
         statusText.GetComponent<FadeText>().SetText(loadedFromFile ? "settings loaded!" : "");
         loadedFromFile = false;
 
@@ -96,12 +102,12 @@ public class XFadeSetupManager : MonoBehaviour
             transition.SetValues(transitionInfo);
         }
 
-        if (config.intro != null) {
+        if (config.intro != null && config.intro.file != "") {
             CreateIntro();
             intro.SetValues(config.intro);
         }
 
-        if (config.outro != null) {
+        if (config.outro != null && config.outro.file != "") {
             CreateOutro();
             outro.SetValues(config.outro);
         }
@@ -170,6 +176,7 @@ public class XFadeSetupManager : MonoBehaviour
     }
 
     private void SaveSettings() {
+        CURRENT_CONFIG = new XFadeConfig();
         Fadeable[] sectionsInfo = sections.Select(section => {
                 Fadeable info = section.GetInfo();
                 info.file = FilePathUtils.FullPathToLocalPath(info.file);
@@ -240,7 +247,7 @@ public class XFadeSetupManager : MonoBehaviour
                 FilePathUtils.LocalPathToFullPath(section.file),
                 callback,
                 () => {
-                    Debug.Log("error loading file");
+                    Debug.Log($"error loading file {section.file}");
                 }
             ));
         }
@@ -251,29 +258,29 @@ public class XFadeSetupManager : MonoBehaviour
                 FilePathUtils.LocalPathToFullPath(transition.file),
                 callback,
                 () => {
-                    Debug.Log("error loading file");
+                    Debug.Log($"error loading file {transition.file}");
                 }
             ));
         }
 
-        if (config.intro != null) {
+        if (config.intro != null && config.intro.file != "") {
             StartCoroutine(AudioCache.Instance().LoadClip(
                 FilePathUtils.LocalPathToFullPath(config.intro.file),
                 callback,
                 () => {
-                    Debug.Log("error loading file");
+                    Debug.Log($"error loading file {config.intro.file}");
                 }
             ));
         } else {
             callback();
         }
 
-        if (config.outro != null) {
+        if (config.outro != null && config.outro.file != "") {
             StartCoroutine(AudioCache.Instance().LoadClip(
                 FilePathUtils.LocalPathToFullPath(config.outro.file),
                 callback,
                 () => {
-                    Debug.Log("error loading file");
+                    Debug.Log($"error loading file {config.outro.file}");
                 }
             ));
         } else {

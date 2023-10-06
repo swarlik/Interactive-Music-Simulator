@@ -2620,6 +2620,7 @@ MonoBehaviour:
   backToMainButton: {fileID: 1008398919}
   introOutroToggle: {fileID: 1203439842}
   modeDropdown: {fileID: 557281320}
+  scrollContainer: {fileID: 850116647}
   container: {fileID: 1142006154}
   sectionPrefab: {fileID: 7329107389194432442, guid: 7362a594360214626b1fedf0dc5996ad,
     type: 3}
@@ -4896,7 +4897,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 27.694025, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1328153449

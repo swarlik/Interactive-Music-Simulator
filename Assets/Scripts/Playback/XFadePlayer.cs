@@ -179,7 +179,7 @@ public class XFadePlayer : MonoBehaviour
             return;
         }
 
-        if (config.hasIntroOutro && config.outro == null) {
+        if (!config.hasIntroOutro || config.outro == null) {
             Debug.Log("No outro");
             return;
         }

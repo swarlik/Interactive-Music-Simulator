@@ -75,7 +75,11 @@ public class XFadeUIController : MonoBehaviour
         restartButton.interactable = !player.IsPlaying();
         stopButton.interactable = player.IsPlaying();
         outroButton.interactable = 
-            currentConfig.intro != null && player.IsPlaying() && player.GetCurrentSegment() != Segment.Outro && !changeInProgress;
+            currentConfig.hasIntroOutro &&
+            currentConfig.intro != null && 
+            player.IsPlaying() && 
+            player.GetCurrentSegment() != Segment.Outro && 
+            !changeInProgress;
         nextSectionText.text = GetPlayingText();
     }
 

@@ -28,6 +28,7 @@ public class XFadeSetupManager : MonoBehaviour
     public Button backToMainButton;
     public Toggle introOutroToggle;
     public ModeDropdown modeDropdown;
+    public ScrollRect scrollContainer;
 
     public GameObject container;
     public GameObject sectionPrefab;
@@ -50,18 +51,22 @@ public class XFadeSetupManager : MonoBehaviour
 
         addSectionButton.onClick.AddListener(() => {
             CreateUpload<SectionUpload>(sectionPrefab, sections);
+            scrollContainer.verticalNormalizedPosition = 0.0f;
         });
 
         addTransitionButton.onClick.AddListener(() => {
             CreateUpload<TransitionUpload>(transitionPrefab, transitions);
+            scrollContainer.verticalNormalizedPosition = 0.0f;
         });
 
         addIntroButton.onClick.AddListener(() => {
-           CreateIntro();
+            CreateIntro();
+            scrollContainer.verticalNormalizedPosition = 1.0f;
         });
 
         addOutroButton.onClick.AddListener(() => {
             CreateOutro();
+            scrollContainer.verticalNormalizedPosition = 0.0f;
         });
 
         saveButton.onClick.AddListener(() => {
@@ -136,6 +141,10 @@ public class XFadeSetupManager : MonoBehaviour
         reverbToggle.isOn = config.hasReverb;
         introOutroToggle.isOn = config.hasIntroOutro;
         modeDropdown.SetPlaybackMode(config.playbackMode);
+
+        AllLoopableSections().ForEach((section) => {
+            section.ShowHideLoopLength(reverbToggle.isOn);
+        });
     }
 
     // Update is called once per frame

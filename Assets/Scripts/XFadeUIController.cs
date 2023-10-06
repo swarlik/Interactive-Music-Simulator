@@ -9,12 +9,14 @@ using UnityEngine.Networking;
 using System.Linq;
 using static XFadePlayer;
 using static XFadeConfig;
+using static ModeDropdown;
 
 public class XFadeUIController : MonoBehaviour
 {
     public XFadePlayer player;
     public VideoPlayerController videoPlayerController;
 
+    public ModeDropdown modeDropdown;
     public Dropdown sectionsDropdown;
     public InputField xfadeTimeInput;
     public Text nextSectionText;
@@ -35,8 +37,13 @@ public class XFadeUIController : MonoBehaviour
 
         setupSectionsDropdown(sectionsDropdown);
 
+        modeDropdown.SetPlaybackMode(currentConfig.playbackMode);
+        modeDropdown.GetComponent<Dropdown>().onValueChanged.AddListener((dropdown) => {
+            player.SetPlaybackMode(modeDropdown.GetPlaybackMode());
+        });
+
         restartButton.onClick.AddListener(() => {
-            player.StartPlayback(currentConfig, sectionsDropdown.value);
+            player.StartPlayback(currentConfig, sectionsDropdown.value, modeDropdown.GetPlaybackMode());
         });
 
         stopButton.onClick.AddListener(() => {
@@ -64,22 +71,29 @@ public class XFadeUIController : MonoBehaviour
                 FilePathUtils.LocalPathToFullPath(currentConfig.videoFilePath), currentConfig.videoVolume);
         }
 
-        player.StartPlayback(currentConfig, 0);
+        player.StartPlayback(currentConfig, 0, modeDropdown.GetPlaybackMode());
     }
 
     // Update is called once per frame
     void Update()
     {
         bool changeInProgress = player.IsFading() || player.InTransition();
-        sectionsDropdown.interactable = !changeInProgress && player.GetCurrentSegment() != Segment.Outro;
+        sectionsDropdown.interactable = 
+            modeDropdown.GetPlaybackMode() == PlaybackMode.Manual &&
+            !changeInProgress && 
+            player.GetCurrentSegment() != Segment.Outro;
+        modeDropdown.GetComponent<Dropdown>().interactable = !changeInProgress;
+
         restartButton.interactable = !player.IsPlaying();
         stopButton.interactable = player.IsPlaying();
+
         outroButton.interactable = 
             currentConfig.hasIntroOutro &&
             currentConfig.intro != null && 
             player.IsPlaying() && 
             player.GetCurrentSegment() != Segment.Outro && 
             !changeInProgress;
+
         nextSectionText.text = GetPlayingText();
     }
 
@@ -117,7 +131,10 @@ public class XFadeUIController : MonoBehaviour
             return $"Transitioning from {(t.from + 1)} to {(t.to + 1)}";
         }
 
-        int section = Array.IndexOf<Fadeable>(currentConfig.sections, player.GetCurrent()) + 1;
-        return player.IsFading() ? $"Fading into Section {section}" : $"Playing Section {section}";
+        int currentSection = player.CurrentSectionIndex() + 1;
+        int nextSection = player.NextSectionIndex() + 1;
+        return player.IsFading() ? 
+            $"Fading into Section {currentSection}" : 
+            $"Playing Section {currentSection}. Next Section {nextSection}.";
     }
 }

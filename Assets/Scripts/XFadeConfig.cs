@@ -1,4 +1,5 @@
 using System;
+using static ModeDropdown;
 
 [System.Serializable]
 public class XFadeConfig {
@@ -35,4 +36,6 @@ public class XFadeConfig {
     public Fadeable intro;
     public Fadeable outro;
     public bool hasIntroOutro = false;
+
+    public PlaybackMode playbackMode;
 }

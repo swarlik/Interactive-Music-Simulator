@@ -27,6 +27,7 @@ public class XFadeSetupManager : MonoBehaviour
     public Toggle reverbToggle;
     public Button backToMainButton;
     public Toggle introOutroToggle;
+    public ModeDropdown modeDropdown;
 
     public GameObject container;
     public GameObject sectionPrefab;
@@ -134,6 +135,7 @@ public class XFadeSetupManager : MonoBehaviour
 
         reverbToggle.isOn = config.hasReverb;
         introOutroToggle.isOn = config.hasIntroOutro;
+        modeDropdown.SetPlaybackMode(config.playbackMode);
     }
 
     // Update is called once per frame
@@ -239,6 +241,8 @@ public class XFadeSetupManager : MonoBehaviour
             outroInfo.file = FilePathUtils.FullPathToLocalPath(outroInfo.file);
             CURRENT_CONFIG.outro = outroInfo;   
         }
+
+        CURRENT_CONFIG.playbackMode = modeDropdown.GetPlaybackMode();
     }
 
     private void WriteConfigToFile() {

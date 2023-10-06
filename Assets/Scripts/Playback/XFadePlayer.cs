@@ -6,6 +6,7 @@ using UnityEngine.Audio;
 using System.Linq;
 using System;
 using static XFadeConfig;
+using static ModeDropdown;
 
 public class XFadePlayer : MonoBehaviour
 {
@@ -39,6 +40,8 @@ public class XFadePlayer : MonoBehaviour
     private int nextSectionIndex;
     private Transition nextTransition;
     private double nextEventTime;
+    private bool fadeNext;
+    private PlaybackMode currentMode;
 
     private XFadeConfig config;
 
@@ -75,8 +78,9 @@ public class XFadePlayer : MonoBehaviour
 
         Debug.Log($"About to play current: {currentSegment.ToString()} next: {nextSegment.ToString()}");
 
-        // If changing to a different segment, perform a crossfade. Otherwise, just switch audio sources
-        if (current != null && current != next) {
+        // If changing to a different segment and fadeNext is specifcied, perform a crossfade. 
+        // Otherwise, just switch audio sources without a fade.
+        if (current != null && current != next && fadeNext) {
             Debug.Log($"Performing xfade");
             XFade(nextClip, current.fadeOutTime, next.fadeInTime);
         } else {
@@ -86,22 +90,45 @@ public class XFadePlayer : MonoBehaviour
             FlipAudio();
         }
 
+        float lastFadeOutTime = current == null ? 0.0f : current.fadeOutTime;
 
         // Calculate the following segment.
         current = next;
         currentSegment = nextSegment;
+        fadeNext = false;
 
         float playLength = config.hasReverb && current.loopLength > 0 ? current.loopLength : nextClip.length;
+        int random = UnityEngine.Random.Range(0, config.sections.Length);
+        int nextSection;
 
         switch (currentSegment) {
             case Segment.Intro:
-                next = config.sections[startSection];
+                if (currentMode == PlaybackMode.Sequential) {
+                    nextSection = 0;
+                } else if (currentMode == PlaybackMode.Random) {
+                    nextSection = random;
+                } else {
+                    nextSection = startSection;
+                }
+                next = config.sections[nextSection];
+                nextSegment = Segment.Section;
+                break;
+            case Segment.Section:
+                if (currentMode == PlaybackMode.Sequential) {
+                    nextSection = (CurrentSectionIndex() + 1) % config.sections.Length;
+                } else if (currentMode == PlaybackMode.Random) {
+                    nextSection = random;
+                } else {
+                    nextSection = CurrentSectionIndex();
+                }
+                next = config.sections[nextSection];
                 nextSegment = Segment.Section;
                 break;
             case Segment.Transition:
                 next = config.sections[((Transition) current).to];
-                playLength = Math.Max(current.fadeInTime, nextClip.length - current.fadeOutTime);
+                playLength = Math.Max(Math.Max(lastFadeOutTime, current.fadeInTime) + OFFSET, nextClip.length - current.fadeOutTime);
                 nextSegment = Segment.Section;
+                fadeNext = true;
                 break;
             case Segment.Outro:
                 next = null;
@@ -113,7 +140,7 @@ public class XFadePlayer : MonoBehaviour
         Debug.Log($"Next has reverb: {config.hasReverb} loop length: {current.loopLength}. current audio time: {AudioSettings.dspTime} next event time: {nextEventTime}");
     }
 
-    public void StartPlayback(XFadeConfig config, int startSection) {
+    public void StartPlayback(XFadeConfig config, int startSection, PlaybackMode startMode) {
         this.config = config;
         Debug.Log($"Starting playback with {JsonUtility.ToJson(config)}");
         
@@ -124,11 +151,12 @@ public class XFadePlayer : MonoBehaviour
 
         currentSegment = Segment.None;
         if (config.hasIntroOutro && config.intro != null && config.intro.file != "") {
-            SetNext(config.intro, Segment.Intro);
+            GoToSegment(config.intro, Segment.Intro);
         } else {
-            SetNext(config.sections[startSection], Segment.Section);
+            GoToSegment(config.sections[startSection], Segment.Section);
         }
 
+        currentMode = startMode;
         this.startSection = startSection;
         isPlaying = true;
 
@@ -151,7 +179,7 @@ public class XFadePlayer : MonoBehaviour
     }
 
     public void GoToSection(int section) {
-        if (!isPlaying) {
+        if (!isPlaying || section == CurrentSectionIndex()) {
             return;
         }
         if (config.sections.Length < section) {
@@ -159,18 +187,16 @@ public class XFadePlayer : MonoBehaviour
             return;
         }
 
-        nextSectionIndex = section;
-
         Transition transition = null;
         if (config.transitions != null) {
-            transition = config.transitions.FirstOrDefault(t => t.from == currentSectionIndex && t.to == section);
+            transition = config.transitions.FirstOrDefault(t => t.from == CurrentSectionIndex() && t.to == section);
         }
 
         if (transition != null) {
-            SetNext(transition, Segment.Transition);
+            GoToSegment(transition, Segment.Transition);
         } else {
-            Debug.Log($"No transition for {currentSectionIndex} to {nextSectionIndex}");
-            SetNext(config.sections[section], Segment.Section);
+            Debug.Log($"No transition for {CurrentSectionIndex()} to {section}");
+            GoToSegment(config.sections[section], Segment.Section);
         }
     }
 
@@ -184,7 +210,45 @@ public class XFadePlayer : MonoBehaviour
             return;
         }
 
-        SetNext(config.outro, Segment.Outro);
+        GoToSegment(config.outro, Segment.Outro);
+    }
+
+    public void SetPlaybackMode(PlaybackMode mode) {
+        currentMode = mode;
+        int random = UnityEngine.Random.Range(0, config.sections.Length);
+        int nextSection;
+
+        if (currentSegment != Segment.Intro && currentSegment != Segment.Section) {
+            return;
+        }
+
+        if (mode == PlaybackMode.Random) {
+            nextSection = random;
+        } else if (mode == PlaybackMode.Sequential) {
+            nextSection = currentSegment == Segment.Intro ? 0 : (CurrentSectionIndex() + 1) % config.sections.Length;
+        } else {
+            nextSection = currentSegment == Segment.Intro ? 0 : CurrentSectionIndex();
+        }
+
+        next = config.sections[nextSection];
+        
+        Debug.Log($"Setting mode to {mode}. next section: {nextSection}");
+    }
+
+    public int CurrentSectionIndex() {
+        if (current == null || currentSegment != Segment.Section) { 
+            return -1;
+        }
+
+        return Array.IndexOf<Fadeable>(config.sections, current);
+    }
+
+    public int NextSectionIndex() {
+        if (next == null || nextSegment != Segment.Section) { 
+            return -1;
+        }
+
+        return Array.IndexOf<Fadeable>(config.sections, next);
     }
 
     public bool IsFading() {
@@ -211,14 +275,6 @@ public class XFadePlayer : MonoBehaviour
         return isPlaying;
     }
 
-    public int GetCurrentSection() {
-        return currentSectionIndex;
-    }
-
-    public int GetNextSection() {
-        return nextSectionIndex;
-    }
-
     public bool InTransition() {
         return currentSegment == Segment.Transition;
     }
@@ -228,9 +284,10 @@ public class XFadePlayer : MonoBehaviour
         mixer.SetFloat("MusicVolume", volume == 0.0f ? -100 : Mathf.Log10(volume) * 20);
     }
 
-    private void SetNext(Fadeable next, Segment nextSegment) {
+    private void GoToSegment(Fadeable next, Segment nextSegment) {
         this.next = next;
         this.nextSegment = nextSegment;
+        fadeNext = true;
         nextEventTime = AudioSettings.dspTime + OFFSET;
     }
 

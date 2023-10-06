@@ -26,6 +26,7 @@ public class XFadeSetupManager : MonoBehaviour
     public Button startButton;
     public Toggle reverbToggle;
     public Button backToMainButton;
+    public Toggle introOutroToggle;
 
     public GameObject container;
     public GameObject sectionPrefab;
@@ -82,6 +83,12 @@ public class XFadeSetupManager : MonoBehaviour
             SceneManager.LoadScene("Launch");
         });
 
+        reverbToggle.onValueChanged.AddListener((isOn) => {
+            AllLoopableSections().ForEach((section) => {
+                section.ShowHideLoopLength(isOn);
+            });
+        });
+
         statusText.GetComponent<FadeText>().SetText(loadedFromFile ? "settings loaded!" : "");
         loadedFromFile = false;
 
@@ -126,6 +133,7 @@ public class XFadeSetupManager : MonoBehaviour
         }
 
         reverbToggle.isOn = config.hasReverb;
+        introOutroToggle.isOn = config.hasIntroOutro;
     }
 
     // Update is called once per frame
@@ -136,6 +144,15 @@ public class XFadeSetupManager : MonoBehaviour
         startButton.interactable = sections.Exists(section => section.HasLoadedFile());
         addIntroButton.interactable = intro == null;
         addOutroButton.interactable = outro == null;
+
+        addIntroButton.gameObject.SetActive(introOutroToggle.isOn);
+        addOutroButton.gameObject.SetActive(introOutroToggle.isOn);
+        if (intro != null) {
+            intro.gameObject.SetActive(introOutroToggle.isOn);
+        }
+        if (outro != null) {
+            outro.gameObject.SetActive(introOutroToggle.isOn);
+        }
     }
 
     private T CreateUpload<T>(GameObject prefab, List<T> list) where T : AudioUpload {
@@ -175,6 +192,15 @@ public class XFadeSetupManager : MonoBehaviour
         }
     }
 
+    private List<SectionUpload> AllLoopableSections() {
+        List<SectionUpload> uploads = new List<SectionUpload>();
+        uploads.AddRange(sections);
+        if (intro != null) {
+            uploads.Add(intro);
+        }
+        return uploads;
+    }
+
     private void SaveSettings() {
         CURRENT_CONFIG = new XFadeConfig();
         Fadeable[] sectionsInfo = sections.Select(section => {
@@ -200,6 +226,8 @@ public class XFadeSetupManager : MonoBehaviour
         CURRENT_CONFIG.transitions = transitionsInfo;
         CURRENT_CONFIG.videoFilePath = FilePathUtils.FullPathToLocalPath(videoUpload.GetFilePath());
         CURRENT_CONFIG.hasReverb = reverbToggle.isOn;
+        CURRENT_CONFIG.hasIntroOutro = introOutroToggle.isOn;
+
         if (intro != null) {
             Fadeable introInfo = intro.GetInfo();
             introInfo.file = FilePathUtils.FullPathToLocalPath(introInfo.file);

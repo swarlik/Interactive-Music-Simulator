@@ -24,7 +24,7 @@ public class SectionUpload : AudioUpload
     }
 
     public void ShowHideLoopLength(bool show) {
-        GetSettingsInput("LengthInputRow/LengthInput").interactable = show;
+        gameObject.transform.Find($"Settings/LengthInputRow").gameObject.SetActive(show);
     }
 
     public Fadeable GetInfo() {

@@ -34,4 +34,5 @@ public class XFadeConfig {
 
     public Fadeable intro;
     public Fadeable outro;
+    public bool hasIntroOutro = false;
 }

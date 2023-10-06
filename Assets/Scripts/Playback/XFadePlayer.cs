@@ -123,7 +123,7 @@ public class XFadePlayer : MonoBehaviour
         }
 
         currentSegment = Segment.None;
-        if (config.intro != null && config.intro.file != "") {
+        if (config.hasIntroOutro && config.intro != null && config.intro.file != "") {
             SetNext(config.intro, Segment.Intro);
         } else {
             SetNext(config.sections[startSection], Segment.Section);
@@ -179,7 +179,7 @@ public class XFadePlayer : MonoBehaviour
             return;
         }
 
-        if (config.outro == null) {
+        if (config.hasIntroOutro && config.outro == null) {
             Debug.Log("No outro");
             return;
         }

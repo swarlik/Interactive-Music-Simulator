@@ -37,12 +37,15 @@ public class ErrorToast : MonoBehaviour
         errorText.text = errorMessage;
         canvas.alpha = 1.0f;
         closeButton.interactable = true;
-        // StartCoroutine(FadeToZeroAlpha(3.0f, 1.0f, canvas));
+        canvas.blocksRaycasts = true;
+        canvas.interactable = true;
     }
 
     private void HideError() {
         canvas.alpha = 0.0f;
         closeButton.interactable = false;
+        canvas.interactable = false;
+        canvas.blocksRaycasts = false;
     }
 
     public IEnumerator FadeToZeroAlpha(float fadeTime, float delay, CanvasGroup canvas)

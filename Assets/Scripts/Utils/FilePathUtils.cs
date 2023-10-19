@@ -19,4 +19,8 @@ public class FilePathUtils {
     public static string LocalPathToFullPath(string path) {
         return Path.GetFullPath("./") + path;
     }
+
+    public static string GetFilePathError(string path) {
+        return $"Invalid file! Files should be located within {Path.GetFullPath("./")}. \n(you selected: {path})";
+    }
 }

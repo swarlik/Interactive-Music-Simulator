@@ -19,7 +19,7 @@ public class VideoUpload : MonoBehaviour
                 string path = paths[0];
                 Debug.Log($"Selected file {path}");
                 if (!FilePathUtils.IsPathValid(path)) {
-                    Debug.Log("Invalid file!");
+                    ErrorToast.Instance().ShowError(FilePathUtils.GetFilePathError(path));
                     return;
                 }
                 SetFilePath(path);

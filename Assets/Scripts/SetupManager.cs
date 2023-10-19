@@ -274,6 +274,10 @@ public class SetupManager : MonoBehaviour
                 }
                 string path = paths[0];
                 Debug.Log($"Selected file {path}");
+                if (!FilePathUtils.IsPathValid(path)) {
+                    ErrorToast.Instance().ShowError(FilePathUtils.GetFilePathError(path));
+                    return;
+                }
                 config.videoFilePath = path;
                 filePathLabel.text = path;
             }, () => {
@@ -331,11 +335,11 @@ public class SetupManager : MonoBehaviour
         Debug.Log($"Selected file: {FileBrowser.Result[0]}");
 
         string path = FileBrowser.Result[0];
-        if (!PlaybackConfig.IsPathValid(path)) {
-            Debug.Log("Invalid path!");
+        if (!FilePathUtils.IsPathValid(path)) {
+            ErrorToast.Instance().ShowError(FilePathUtils.GetFilePathError(path));
             yield break;
         }
-        using (UnityWebRequest req = UnityWebRequestMultimedia.GetAudioClip("file://" + path, AudioType.WAV)) {
+        using (UnityWebRequest req = UnityWebRequestMultimedia.GetAudioClip(new Uri(path), AudioType.WAV)) {
             yield return req.SendWebRequest();
             if (req.result == UnityWebRequest.Result.ConnectionError) {
                 Debug.Log(req.error);
@@ -417,7 +421,7 @@ public class SetupManager : MonoBehaviour
     }
 
     private IEnumerator loadFileClipFromFile(string path, Action<AudioClip, string> onLoad) {
-        using (UnityWebRequest req = UnityWebRequestMultimedia.GetAudioClip("file://" + path, AudioType.WAV)) {
+        using (UnityWebRequest req = UnityWebRequestMultimedia.GetAudioClip(new Uri(path), AudioType.WAV)) {
             yield return req.SendWebRequest();
             if (req.result == UnityWebRequest.Result.ConnectionError) {
                 Debug.Log(req.error);

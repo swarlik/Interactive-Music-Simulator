@@ -288,8 +288,8 @@ public class XFadeSetupManager : MonoBehaviour
                 StartCoroutine(AudioCache.Instance().LoadClip(
                     FilePathUtils.LocalPathToFullPath(section.file),
                     callback,
-                    () => {
-                        Debug.Log($"error loading file {section.file}");
+                    (error) => {
+                       ErrorToast.Instance().ShowError(error);
                     }
                 ));
             } else {
@@ -303,8 +303,8 @@ public class XFadeSetupManager : MonoBehaviour
                 StartCoroutine(AudioCache.Instance().LoadClip(
                     FilePathUtils.LocalPathToFullPath(transition.file),
                     callback,
-                    () => {
-                        Debug.Log($"error loading file {transition.file}");
+                    (error) => {
+                        ErrorToast.Instance().ShowError(error);
                     }
                 ));
             } else {
@@ -316,8 +316,8 @@ public class XFadeSetupManager : MonoBehaviour
             StartCoroutine(AudioCache.Instance().LoadClip(
                 FilePathUtils.LocalPathToFullPath(config.intro.file),
                 callback,
-                () => {
-                    Debug.Log($"error loading file {config.intro.file}");
+                (error) => {
+                    ErrorToast.Instance().ShowError(error);
                 }
             ));
         } else {
@@ -328,8 +328,8 @@ public class XFadeSetupManager : MonoBehaviour
             StartCoroutine(AudioCache.Instance().LoadClip(
                 FilePathUtils.LocalPathToFullPath(config.outro.file),
                 callback,
-                () => {
-                    Debug.Log($"error loading file {config.outro.file}");
+                (error) => {
+                    ErrorToast.Instance().ShowError(error);
                 }
             ));
         } else {

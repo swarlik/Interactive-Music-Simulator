@@ -10,6 +10,7 @@ public abstract class AudioUpload : MonoBehaviour
     protected int index;
     private Action onClear;
     private bool hasLoadedFile;
+    private ErrorToast errorToast;
 
     // Start is called before the first frame update
     void Start()
@@ -75,15 +76,15 @@ public abstract class AudioUpload : MonoBehaviour
             string path = paths[0];
             Debug.Log($"Selected file {path}");
             if (!FilePathUtils.IsPathValid(path)) {
-                Debug.Log("Invalid file!");
+                ErrorToast.Instance().ShowError(FilePathUtils.GetFilePathError(path));
                 return;
             }
             StartCoroutine(AudioCache.Instance().LoadClip(path, 
                 () => {
                     SetFilePath(path);
                 },
-                () => {
-                    Debug.Log("Audio Error");
+                (error) => {
+                    ErrorToast.Instance().ShowError(error);
                 }));
         }, () => {
             Debug.Log("Canceled");

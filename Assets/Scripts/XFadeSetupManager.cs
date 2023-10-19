@@ -284,24 +284,32 @@ public class XFadeSetupManager : MonoBehaviour
         };
 
         foreach (Fadeable section in config.sections) {
-            StartCoroutine(AudioCache.Instance().LoadClip(
-                FilePathUtils.LocalPathToFullPath(section.file),
-                callback,
-                () => {
-                    Debug.Log($"error loading file {section.file}");
-                }
-            ));
+            if (section.file != "") {
+                StartCoroutine(AudioCache.Instance().LoadClip(
+                    FilePathUtils.LocalPathToFullPath(section.file),
+                    callback,
+                    () => {
+                        Debug.Log($"error loading file {section.file}");
+                    }
+                ));
+            } else {
+                callback();
+            }
         }
 
         
         foreach (Transition transition in config.transitions) {
-            StartCoroutine(AudioCache.Instance().LoadClip(
-                FilePathUtils.LocalPathToFullPath(transition.file),
-                callback,
-                () => {
-                    Debug.Log($"error loading file {transition.file}");
-                }
-            ));
+            if (transition.file != "") {
+                StartCoroutine(AudioCache.Instance().LoadClip(
+                    FilePathUtils.LocalPathToFullPath(transition.file),
+                    callback,
+                    () => {
+                        Debug.Log($"error loading file {transition.file}");
+                    }
+                ));
+            } else {
+                callback();
+            }
         }
 
         if (config.intro != null && config.intro.file != "") {

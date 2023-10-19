@@ -35,7 +35,9 @@ public class TransitionUpload : AudioUpload
     }
 
     public void SetValues(Transition info) {
-        base.SetFilePath(FilePathUtils.LocalPathToFullPath(info.file));
+        if (info.file != "") {
+            base.SetFilePath(FilePathUtils.LocalPathToFullPath(info.file));
+        }
         GetSettingsInput("FromToRow/FromInput").text = (info.from + 1).ToString();
         GetSettingsInput("FromToRow/ToInput").text = (info.to + 1).ToString();
         GetSettingsInput("FadeInOutRow/FadeInInput").text = info.fadeInTime.ToString();

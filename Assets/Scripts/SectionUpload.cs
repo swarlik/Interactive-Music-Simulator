@@ -44,7 +44,9 @@ public class SectionUpload : AudioUpload
     }
 
     public void SetValues(Fadeable info) {
-        base.SetFilePath(FilePathUtils.LocalPathToFullPath(info.file));
+        if (info.file != "") {
+            base.SetFilePath(FilePathUtils.LocalPathToFullPath(info.file));
+        }
         GetSettingsInput("LengthInputRow/LengthInput").text = info.loopLength.ToString();
         GetSettingsInput("FadeInOutRow/FadeInInput").text = info.fadeInTime.ToString();
         GetSettingsInput("FadeInOutRow/FadeOutInput").text = info.fadeOutTime.ToString();

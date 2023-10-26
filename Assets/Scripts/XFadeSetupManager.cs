@@ -175,6 +175,9 @@ public class XFadeSetupManager : MonoBehaviour
                 ResetIndices(list);
             });
         list.Add(upload);
+        if (upload is SectionUpload) {
+            (upload as SectionUpload).ShowHideLoopLength(reverbToggle.isOn);
+        }
         return upload;
     }
 

@@ -265,7 +265,15 @@ public class XFadeSetupManager : MonoBehaviour
     }
 
     private void LoadFromConfig() {
-        string configJson = File.ReadAllText($"./{SETTINGS_FILE_NAME}");
+        string configJson;
+        try {
+            configJson = File.ReadAllText($"./{SETTINGS_FILE_NAME}");
+        } catch (FileNotFoundException e) {
+            ErrorToast.Instance().ShowError(
+                $"Error loading settings file. Is there a file named {SETTINGS_FILE_NAME} in this directory?"
+            );
+            return;
+        }
         Debug.Log($"Read file: {configJson}");
         XFadeConfig config = JsonUtility.FromJson<XFadeConfig>(configJson); 
         Debug.Log(config);

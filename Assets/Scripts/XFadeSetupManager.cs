@@ -209,9 +209,6 @@ public class XFadeSetupManager : MonoBehaviour
     private List<SectionUpload> AllLoopableSections() {
         List<SectionUpload> uploads = new List<SectionUpload>();
         uploads.AddRange(sections);
-        if (intro != null) {
-            uploads.Add(intro);
-        }
         return uploads;
     }
 

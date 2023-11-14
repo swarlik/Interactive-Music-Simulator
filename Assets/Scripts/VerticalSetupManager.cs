@@ -8,7 +8,7 @@ using System.IO;
 using UnityEngine.SceneManagement;
 using static XFadeConfig;
 
-public class XFadeSetupManager : MonoBehaviour
+public class VerticalSetupManager : MonoBehaviour
 {
     private static string SETTINGS_FILE_NAME = "settings-xfade.json";
     private static bool loadedFromFile = false;

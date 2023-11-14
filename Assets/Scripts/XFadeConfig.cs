@@ -7,14 +7,6 @@ public class XFadeConfig {
     public static int MAX_TRANSITIONS = 10;
 
     [System.Serializable]
-    public class Fadeable {
-        public string file;
-        public float fadeInTime;
-        public float fadeOutTime;
-        public float loopLength;
-    }
-
-    [System.Serializable]
     public class Section : Fadeable {
     
     }

@@ -16,7 +16,10 @@ public class VerticalRemixingPlayer : MonoBehaviour
     private List<AudioLayer> layers;
     private int currentLayer;
     private LayeringMode currentMode;
-    private int activeFades = 0;
+    private bool isPlaying;
+
+    private int fadeCoroutineId = 0;
+    private Dictionary<int, Coroutine> activeFades;
 
     void Awake() {
         groups = mixer.FindMatchingGroups("Music/");
@@ -26,7 +29,7 @@ public class VerticalRemixingPlayer : MonoBehaviour
     }
     
     void Start() {
-        RunTest();
+        activeFades = new Dictionary<int, Coroutine>();
     }
 
     void Update() {
@@ -36,7 +39,15 @@ public class VerticalRemixingPlayer : MonoBehaviour
     }
 
     public bool IsFading() {
-        return activeFades > 0;
+        return activeFades.Count() > 0;
+    }
+
+    public bool IsPlaying() {
+        return isPlaying;
+    }
+
+    public int GetCurrentLayer() {
+        return currentLayer;
     }
 
     public void StartPlayback(VerticalRemixingConfig config, int startLayer, LayeringMode startMode) {
@@ -51,7 +62,7 @@ public class VerticalRemixingPlayer : MonoBehaviour
         }
 
         // Start all layers at the exact same time
-        double startTime = AudioSettings.dspTime + 1.0f;
+        double startTime = AudioSettings.dspTime + 0.1f;
         foreach (AudioLayer layer in layers) {
             layer.Play(startTime);
         }
@@ -59,11 +70,12 @@ public class VerticalRemixingPlayer : MonoBehaviour
         currentLayer = startLayer;
         currentMode = startMode;
         this.config = config;
+        isPlaying = true;
     }
 
     public void GoToLayer(int targetLayer) {
         Debug.Log($"Going to layer {targetLayer}");
-        if (currentLayer == targetLayer || targetLayer >= layers.Count()) {
+        if (!isPlaying || currentLayer == targetLayer || targetLayer >= layers.Count()) {
             return;
         }
 
@@ -88,6 +100,23 @@ public class VerticalRemixingPlayer : MonoBehaviour
         currentLayer = targetLayer;
     }
 
+    public void SetVolume(float volume) {
+        mixer.SetFloat("MusicVolume", volume == 0.0f ? -100 : Mathf.Log10(volume) * 20);
+    }
+
+    public void StopPlayback() {
+        foreach (Coroutine coroutine in activeFades.Values) {
+            StopCoroutine(coroutine);
+        }
+        activeFades.Clear();
+
+        foreach (AudioLayer layer in layers) {
+            layer.Stop();
+        }
+
+        isPlaying = false;
+    }
+
     private void SetLayerVolume(int layer, float volume) {
         mixer.SetFloat($"LayerVolume{layer + 1}", volume == 0.0f ? -100 : Mathf.Log10(volume) * 20);
     }
@@ -107,11 +136,12 @@ public class VerticalRemixingPlayer : MonoBehaviour
     }
 
     private void StartFade(int layer, float fadeTime, bool fadeIn) {
-        StartCoroutine(Fade(layer, fadeTime, fadeIn, () => {
-            activeFades--;
+        int currentId = fadeCoroutineId++;
+        Coroutine fade = StartCoroutine(Fade(layer, fadeTime, fadeIn, () => {
+            activeFades.Remove(currentId);
         }));
 
-        activeFades++;
+        activeFades.Add(currentId, fade);
     }
 
     private IEnumerator Fade(int layer, float fadeTime, bool fadeIn, Action onComplete) {
@@ -128,59 +158,6 @@ public class VerticalRemixingPlayer : MonoBehaviour
         
 
         onComplete();
-    }
-
-    /// TEST CODE
-
-    private static string[] TEST_FILES = {
-        "Builds/Latest/_TestAudio/Layering/L4 Bass Omni A.wav",
-        "Builds/Latest/_TestAudio/Layering/L2 Choir Pad.wav",
-        "Builds/Latest/_TestAudio/Layering/L3 Kora Outside.wav", 
-        "Builds/Latest/_TestAudio/Layering/L6 Shaker.wav",
-        "Builds/Latest/_TestAudio/Layering/L1 Sanchit Vox.wav", 
-    };
-
-    private static float[] LENGTHS = {
-        25.263f,
-        114.0f, 
-        12.632f,
-        12.632f,
-        114.0f
-    };
-
-    private VerticalRemixingConfig createSampleConfig() {
-        VerticalRemixingConfig config = new VerticalRemixingConfig();
-        config.hasReverb = true;
-        config.layeringMode = LayeringMode.ADDITIVE;
-        List<Fadeable> layers = new List<Fadeable>();
-        for (int i = 0; i < TEST_FILES.Length; i++) {
-            Fadeable layer = new Fadeable();
-            layer.file = TEST_FILES[i];
-            layer.loopLength = LENGTHS[i];
-            layer.fadeInTime = 4.0f;
-            layer.fadeOutTime = 4.0f;
-            layers.Add(layer);
-        }
-        config.layers = layers.ToArray();
-        return config;
-    }
-
-    private void RunTest() {
-        VerticalRemixingConfig config = createSampleConfig();
-        int loadCounter = 0;
-        Action callback = () => {
-            loadCounter++;
-            if (loadCounter == TEST_FILES.Length) {
-                StartPlayback(config, 1, config.layeringMode);
-            }
-        };
-
-        foreach (String file in TEST_FILES) {
-            StartCoroutine(
-                AudioCache.Instance().LoadClip(FilePathUtils.LocalPathToFullPath(file), callback, (error) => {
-                    Debug.Log(error);
-                }));
-        }
     }
 
     private void HandleLayerKeyPress() {

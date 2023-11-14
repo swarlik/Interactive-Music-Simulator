@@ -15,6 +15,7 @@ public class AudioLayer : MonoBehaviour
     private AudioClip clip;
 
     private double nextEventTime;
+    private bool isPlaying;
 
     void Awake() {
         audio1 = gameObject.AddComponent<AudioSource>();
@@ -22,16 +23,16 @@ public class AudioLayer : MonoBehaviour
     }
 
     void Update() {
-        if (!hasReverb || AudioSettings.dspTime + OFFSET < nextEventTime) {
+        if (!isPlaying || !hasReverb || AudioSettings.dspTime + OFFSET < nextEventTime) {
             return;
         }
 
         Debug.Log("Starting to play");
+        FlipAudio();
         currentAudio.clip = clip;
         currentAudio.PlayScheduled(nextEventTime);
 
         nextEventTime += section.loopLength;
-        FlipAudio();
     }
 
     public void Init(Fadeable section, bool hasReverb, AudioMixerGroup output) {
@@ -53,23 +54,26 @@ public class AudioLayer : MonoBehaviour
             Debug.Log($"No audio loaded for {section.file}");
             return;
         }
-        
+
         this.clip = clip;
-        currentAudio = audio1;
 
         if (hasReverb && section.loopLength > 0) {
             nextEventTime = playTime;
             Debug.Log($"playing next event at {nextEventTime}");
         } else {
+            currentAudio = audio1;
             Debug.Log("Starting to play!");
             currentAudio.clip = clip;
             currentAudio.loop = true;
             currentAudio.PlayScheduled(playTime);
         }
+
+        isPlaying = true;
     }
 
     public void Stop() {
         currentAudio.Stop();
+        isPlaying = false;
     }
 
     private void FlipAudio() {

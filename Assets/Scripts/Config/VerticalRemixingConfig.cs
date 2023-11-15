@@ -4,7 +4,7 @@ using System;
 public class VerticalRemixingConfig {
     public static int MAX_LAYERS = 8;
 
-    public Fadeable[] layers;
+    public Fadeable[] layers = {};
     public string videoFilePath;
     public float musicVolume = 1.0f;
     public float videoVolume = 0.0f;
@@ -12,7 +12,7 @@ public class VerticalRemixingConfig {
     public LayeringMode layeringMode;
 
     public enum LayeringMode {
-        ADDITIVE,
-        INDEPENDENT
+        Additive,
+        Independent
     }
 }

@@ -56,7 +56,7 @@ public class VerticalRemixingPlayer : MonoBehaviour
             AudioLayer layer = gameObject.AddComponent<AudioLayer>();
             layer.Init(config.layers[i], config.hasReverb, groups[i]);
             layers.Add(layer);
-            SetLayerVolume(i, startMode == LayeringMode.ADDITIVE 
+            SetLayerVolume(i, startMode == LayeringMode.Additive 
                 ? i <= startLayer ? 1.0f : 0.0f 
                 : i == startLayer ? 1.0f : 0.0f);
         }
@@ -79,7 +79,7 @@ public class VerticalRemixingPlayer : MonoBehaviour
             return;
         }
 
-        if (currentMode == LayeringMode.ADDITIVE) {
+        if (currentMode == LayeringMode.Additive) {
             bool fadeIn = currentLayer < targetLayer;
             int start = fadeIn ? currentLayer + 1 : currentLayer;
             int end = fadeIn ? targetLayer : targetLayer + 1;

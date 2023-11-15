@@ -32,47 +32,45 @@ public class VerticalUIController : MonoBehaviour
     void Start()
     {
         // currentConfig = XFadeSetupManager.CURRENT_CONFIG;
-        createSampleConfig((config) => {
-            currentConfig = config;
+        currentConfig = VerticalSetupManager.CURRENT_CONFIG;
 
-            setupLayersDropdown();
+        setupLayersDropdown();
 
-            // modeDropdown.SetPlaybackMode(currentConfig.playbackMode);
-            // modeDropdown.GetComponent<Dropdown>().onValueChanged.AddListener((dropdown) => {
-            //     player.SetPlaybackMode(modeDropdown.GetPlaybackMode());
-            // });
+        // modeDropdown.SetPlaybackMode(currentConfig.playbackMode);
+        // modeDropdown.GetComponent<Dropdown>().onValueChanged.AddListener((dropdown) => {
+        //     player.SetPlaybackMode(modeDropdown.GetPlaybackMode());
+        // });
 
-            restartButton.onClick.AddListener(() => {
-                player.StartPlayback(currentConfig, layersDropdown.value, currentConfig.layeringMode);
-            });
-
-            stopButton.onClick.AddListener(() => {
-                player.StopPlayback();
-            });
-
-            // outroButton.onClick.AddListener(() => {
-            //     player.GoToOutro();
-            // });
-
-            musicSlider.value = currentConfig.musicVolume;
-            musicSlider.onValueChanged.AddListener((float value) => {
-                player.SetVolume(value);
-                currentConfig.musicVolume = value;
-            });
-
-            videoSlider.value = currentConfig.videoVolume;
-            videoSlider.onValueChanged.AddListener((float value) => {
-                videoPlayerController.setVolume(value);
-                currentConfig.videoVolume = value;
-            });
-
-            if (currentConfig.videoFilePath != null && currentConfig.videoFilePath != "") {
-                videoPlayerController.startVideo(
-                    FilePathUtils.LocalPathToFullPath(currentConfig.videoFilePath), currentConfig.videoVolume);
-            }
-
-            player.StartPlayback(currentConfig, 0, currentConfig.layeringMode);
+        restartButton.onClick.AddListener(() => {
+            player.StartPlayback(currentConfig, layersDropdown.value, currentConfig.layeringMode);
         });
+
+        stopButton.onClick.AddListener(() => {
+            player.StopPlayback();
+        });
+
+        // outroButton.onClick.AddListener(() => {
+        //     player.GoToOutro();
+        // });
+
+        musicSlider.value = currentConfig.musicVolume;
+        musicSlider.onValueChanged.AddListener((float value) => {
+            player.SetVolume(value);
+            currentConfig.musicVolume = value;
+        });
+
+        videoSlider.value = currentConfig.videoVolume;
+        videoSlider.onValueChanged.AddListener((float value) => {
+            videoPlayerController.setVolume(value);
+            currentConfig.videoVolume = value;
+        });
+
+        if (currentConfig.videoFilePath != null && currentConfig.videoFilePath != "") {
+            videoPlayerController.startVideo(
+                FilePathUtils.LocalPathToFullPath(currentConfig.videoFilePath), currentConfig.videoVolume);
+        }
+
+        player.StartPlayback(currentConfig, 0, currentConfig.layeringMode);
     }
 
     // Update is called once per frame
@@ -130,7 +128,7 @@ public class VerticalUIController : MonoBehaviour
     public void createSampleConfig(Action<VerticalRemixingConfig> onComplete) {
         VerticalRemixingConfig config = new VerticalRemixingConfig();
         config.hasReverb = true;
-        config.layeringMode = LayeringMode.ADDITIVE;
+        config.layeringMode = LayeringMode.Additive;
         List<Fadeable> layers = new List<Fadeable>();
         for (int i = 0; i < TEST_FILES.Length; i++) {
             Fadeable layer = new Fadeable();

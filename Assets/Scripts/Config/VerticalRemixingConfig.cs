@@ -9,6 +9,11 @@ public class VerticalRemixingConfig {
     public float musicVolume = 1.0f;
     public float videoVolume = 0.0f;
     public bool hasReverb = false;
+    
+    public bool hasIntroOutro = false;
+    public Fadeable intro;
+    public Fadeable outro;
+
     public LayeringMode layeringMode;
 
     public enum LayeringMode {

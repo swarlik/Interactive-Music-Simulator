@@ -9,14 +9,28 @@ using static VerticalRemixingConfig;
 
 public class VerticalRemixingPlayer : MonoBehaviour 
 {
+    private static float OFFSET = 0.04f;
+
     public AudioMixer mixer;
+
+    public enum Segment {
+        Intro,
+        Layers,
+        Outro,
+        None
+    }
+
     // Pre-created audio channels (8 max)
     private AudioMixerGroup[] groups;
+    private AudioSource introOutroAudio;
     private VerticalRemixingConfig config;
     private List<AudioLayer> layers;
     private int currentLayer;
     private LayeringMode currentMode;
     private bool isPlaying;
+    private Segment currentSegment;
+    private Segment nextSegment;
+    private double nextEventTime;
 
     private int fadeCoroutineId = 0;
     private Dictionary<int, Coroutine> activeFades;
@@ -26,6 +40,7 @@ public class VerticalRemixingPlayer : MonoBehaviour
         foreach (AudioMixerGroup group in groups) {
             Debug.Log(group);
         }
+        introOutroAudio = gameObject.AddComponent<AudioSource>();
     }
     
     void Start() {
@@ -33,8 +48,54 @@ public class VerticalRemixingPlayer : MonoBehaviour
     }
 
     void Update() {
-        if (!IsFading() && Application.isEditor) {
-            HandleLayerKeyPress();
+        if (!isPlaying || AudioSettings.dspTime + OFFSET < nextEventTime || 
+            (currentSegment == Segment.Layers && nextSegment == Segment.Layers)) {
+            return;
+        }
+
+        currentSegment = nextSegment;
+
+        if (currentSegment == Segment.None) {
+            isPlaying = false;
+            return;
+        }
+
+        Debug.Log($"current time is {nextEventTime}");
+
+        if (currentSegment == Segment.Intro) {
+            AudioClip intro = AudioCache.Instance().GetClip(FilePathUtils.LocalPathToFullPath(config.intro.file));
+            if (intro == null) {
+                Debug.Log($"No audio loaded for file {config.intro.file}");
+                return;
+            }
+            introOutroAudio.clip = intro;
+            introOutroAudio.PlayScheduled(nextEventTime);
+            nextEventTime += config.hasReverb && config.intro.loopLength > 0.0f ? config.intro.loopLength : intro.length;
+            nextSegment = Segment.Layers;
+            Debug.Log($"Playing Intro, next check at {nextEventTime}");
+        }
+
+        if (currentSegment == Segment.Layers) {
+            foreach (AudioLayer layer in layers) {
+                layer.Play(nextEventTime);
+            }
+            nextSegment = Segment.Layers;
+        }
+
+        if (currentSegment == Segment.Outro) {
+            // Stop playing layers
+            foreach (AudioLayer layer in layers) {
+                layer.Stop();
+            }
+            AudioClip outro = AudioCache.Instance().GetClip(FilePathUtils.LocalPathToFullPath(config.outro.file));
+            if (outro == null) {
+                Debug.Log($"No audio loaded for file {config.outro.file}");
+                return;
+            }
+            introOutroAudio.clip = outro;
+            introOutroAudio.PlayScheduled(nextEventTime);
+            nextSegment = Segment.None;
+            nextEventTime += config.hasReverb && config.outro.loopLength > 0.0f ? config.outro.loopLength : outro.length;
         }
     }
 
@@ -50,6 +111,10 @@ public class VerticalRemixingPlayer : MonoBehaviour
         return currentLayer;
     }
 
+    public Segment GetCurrentSegment() {
+        return currentSegment;
+    }
+
     public void StartPlayback(VerticalRemixingConfig config, int startLayer, LayeringMode startMode) {
         layers = new List<AudioLayer>();
         for (int i = 0; i < config.layers.Length; i++) {
@@ -62,10 +127,9 @@ public class VerticalRemixingPlayer : MonoBehaviour
         }
 
         // Start all layers at the exact same time
-        double startTime = AudioSettings.dspTime + 0.1f;
-        foreach (AudioLayer layer in layers) {
-            layer.Play(startTime);
-        }
+        nextEventTime = AudioSettings.dspTime + OFFSET;
+
+        nextSegment = config.hasIntroOutro ? Segment.Intro : Segment.Layers;
 
         currentLayer = startLayer;
         currentMode = startMode;
@@ -104,6 +168,11 @@ public class VerticalRemixingPlayer : MonoBehaviour
         mixer.SetFloat("MusicVolume", volume == 0.0f ? -100 : Mathf.Log10(volume) * 20);
     }
 
+    public void GoToOutro() {
+        nextSegment = Segment.Outro;
+        nextEventTime = AudioSettings.dspTime + OFFSET;
+    }
+
     public void StopPlayback() {
         foreach (Coroutine coroutine in activeFades.Values) {
             StopCoroutine(coroutine);
@@ -114,7 +183,18 @@ public class VerticalRemixingPlayer : MonoBehaviour
             layer.Stop();
         }
 
+        introOutroAudio.Stop();
+
+        currentSegment = Segment.None;
         isPlaying = false;
+    }
+
+    private void FadeOutAllLayers() {
+        for (int i = 0; i < layers.Count(); i++) {
+            if (IsLayerOn(i)) {
+                StartFade(i, config.layers[i].fadeOutTime, false);
+            }
+        }
     }
 
     private void SetLayerVolume(int layer, float volume) {
@@ -125,14 +205,6 @@ public class VerticalRemixingPlayer : MonoBehaviour
         float volume;
         mixer.GetFloat($"LayerVolume{layer + 1}", out volume);
         return volume != -100;
-    }
-
-    private void StartFadeIn(int layer, float fadeTime) {
-        StartFade(layer, fadeTime, true);
-    }
-
-    private void StartFadeOut(int layer, float fadeTime, Action onComplete) {
-        StartFade(layer, fadeTime, false);
     }
 
     private void StartFade(int layer, float fadeTime, bool fadeIn) {
@@ -156,7 +228,6 @@ public class VerticalRemixingPlayer : MonoBehaviour
         }
         SetLayerVolume(layer, fadeIn ? 1.0f : 0.0f);
         
-
         onComplete();
     }
 

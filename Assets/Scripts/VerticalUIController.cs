@@ -8,15 +8,14 @@ using UnityEditor;
 using UnityEngine.Networking;
 using System.Linq;
 using static VerticalRemixingConfig;
+using static VerticalRemixingPlayer;
 
 public class VerticalUIController : MonoBehaviour
 {
     public VerticalRemixingPlayer player;
     public VideoPlayerController videoPlayerController;
 
-    // public ModeDropdown modeDropdown;
     public Dropdown layersDropdown;
-    // public InputField xfadeTimeInput;
     public Text nextSectionText;
 
     public Button restartButton;
@@ -31,15 +30,9 @@ public class VerticalUIController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        // currentConfig = XFadeSetupManager.CURRENT_CONFIG;
         currentConfig = VerticalSetupManager.CURRENT_CONFIG;
 
         setupLayersDropdown();
-
-        // modeDropdown.SetPlaybackMode(currentConfig.playbackMode);
-        // modeDropdown.GetComponent<Dropdown>().onValueChanged.AddListener((dropdown) => {
-        //     player.SetPlaybackMode(modeDropdown.GetPlaybackMode());
-        // });
 
         restartButton.onClick.AddListener(() => {
             player.StartPlayback(currentConfig, layersDropdown.value, currentConfig.layeringMode);
@@ -49,9 +42,9 @@ public class VerticalUIController : MonoBehaviour
             player.StopPlayback();
         });
 
-        // outroButton.onClick.AddListener(() => {
-        //     player.GoToOutro();
-        // });
+        outroButton.onClick.AddListener(() => {
+            player.GoToOutro();
+        });
 
         musicSlider.value = currentConfig.musicVolume;
         musicSlider.onValueChanged.AddListener((float value) => {
@@ -76,9 +69,16 @@ public class VerticalUIController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        layersDropdown.interactable = !player.IsFading();
+        layersDropdown.interactable = !player.IsFading() && 
+            (player.GetCurrentSegment() == Segment.Layers || player.GetCurrentSegment() == Segment.None);
         restartButton.interactable = !player.IsPlaying();
         stopButton.interactable = player.IsPlaying();
+        outroButton.interactable = 
+            currentConfig.hasIntroOutro &&
+            currentConfig.intro != null && 
+            player.IsPlaying() && 
+            player.GetCurrentSegment() != Segment.Outro && 
+            !player.IsFading();
         nextSectionText.text = GetPlayingText();
     }
 
@@ -100,6 +100,14 @@ public class VerticalUIController : MonoBehaviour
     private string GetPlayingText() {
         if (!player.IsPlaying()) {
             return "Stopped";
+        }
+
+        if (player.GetCurrentSegment() == Segment.Intro) {
+            return "Playing Intro";
+        }
+
+        if (player.GetCurrentSegment() == Segment.Outro) {
+            return "Playing Outro";
         }
 
         int layer = player.GetCurrentLayer();

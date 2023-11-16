@@ -4,7 +4,7 @@ using UnityEngine.Audio;
 
 public class AudioLayer : MonoBehaviour
 {
-    private static double OFFSET = 1.0f;
+    private static double OFFSET = 0.04f;
 
     private Fadeable section;
     private bool hasReverb;
@@ -23,7 +23,7 @@ public class AudioLayer : MonoBehaviour
     }
 
     void Update() {
-        if (!isPlaying || !hasReverb || AudioSettings.dspTime + OFFSET < nextEventTime) {
+        if (!isPlaying || !hasReverb || section.loopLength == 0 || AudioSettings.dspTime + OFFSET < nextEventTime) {
             return;
         }
 
@@ -43,7 +43,7 @@ public class AudioLayer : MonoBehaviour
     }
 
     public void Play(double playTime) {
-        Debug.Log("Starting to play!");
+        Debug.Log("Calling play!");
         if (section == null) {
             Debug.Log("Play called before Init!");
             return;
@@ -62,7 +62,7 @@ public class AudioLayer : MonoBehaviour
             Debug.Log($"playing next event at {nextEventTime}");
         } else {
             currentAudio = audio1;
-            Debug.Log("Starting to play!");
+            Debug.Log("Playing with reverb!");
             currentAudio.clip = clip;
             currentAudio.loop = true;
             currentAudio.PlayScheduled(playTime);
@@ -72,7 +72,9 @@ public class AudioLayer : MonoBehaviour
     }
 
     public void Stop() {
-        currentAudio.Stop();
+        if (currentAudio != null) {
+            currentAudio.Stop();
+        } 
         isPlaying = false;
     }
 

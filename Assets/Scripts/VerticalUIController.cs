@@ -16,6 +16,7 @@ public class VerticalUIController : MonoBehaviour
     public VideoPlayerController videoPlayerController;
 
     public Dropdown layersDropdown;
+    public LayerToggles layerToggles;
     public Text nextSectionText;
 
     public Button restartButton;
@@ -32,10 +33,16 @@ public class VerticalUIController : MonoBehaviour
     {
         currentConfig = VerticalSetupManager.CURRENT_CONFIG;
 
-        setupLayersDropdown();
+        // setupLayersDropdown();
+
+        player.Init(currentConfig);
+        layerToggles.Setup(currentConfig.layers.Length, (index, isOn) => {
+            Debug.Log($"Layer {index} changed {isOn}");
+            player.ToggleLayer(index, isOn);
+        });
 
         restartButton.onClick.AddListener(() => {
-            player.StartPlayback(currentConfig, layersDropdown.value, currentConfig.layeringMode);
+            player.StartPlayback(currentConfig, layerToggles.GetActiveLayers());
         });
 
         stopButton.onClick.AddListener(() => {
@@ -63,14 +70,14 @@ public class VerticalUIController : MonoBehaviour
                 FilePathUtils.LocalPathToFullPath(currentConfig.videoFilePath), currentConfig.videoVolume);
         }
 
-        player.StartPlayback(currentConfig, 0, currentConfig.layeringMode);
+        player.StartPlayback(currentConfig, layerToggles.GetActiveLayers());
     }
 
     // Update is called once per frame
     void Update()
     {
-        layersDropdown.interactable = !player.IsFading() && 
-            (player.GetCurrentSegment() == Segment.Layers || player.GetCurrentSegment() == Segment.None);
+        // layersDropdown.interactable = !player.IsFading() && 
+        //     (player.GetCurrentSegment() == Segment.Layers || player.GetCurrentSegment() == Segment.None);
         restartButton.interactable = !player.IsPlaying();
         stopButton.interactable = player.IsPlaying();
         outroButton.interactable = 
@@ -82,20 +89,20 @@ public class VerticalUIController : MonoBehaviour
         nextSectionText.text = GetPlayingText();
     }
 
-    private void setupLayersDropdown() {
-        layersDropdown.ClearOptions();
+    // private void setupLayersDropdown() {
+    //     layersDropdown.ClearOptions();
 
-        List<string> options = new List<string>();
-        for (int i = 0; i < currentConfig.layers.Length; i++) {
-            options.Add($"Layer {i + 1}");
-        }
-        layersDropdown.AddOptions(options);
-        layersDropdown.onValueChanged.AddListener(delegate {
-            int value = layersDropdown.value;
-            Debug.Log($"Switching to section {value + 1}");
-            player.GoToLayer(value);
-        });
-    }
+    //     List<string> options = new List<string>();
+    //     for (int i = 0; i < currentConfig.layers.Length; i++) {
+    //         options.Add($"Layer {i + 1}");
+    //     }
+    //     layersDropdown.AddOptions(options);
+    //     layersDropdown.onValueChanged.AddListener(delegate {
+    //         int value = layersDropdown.value;
+    //         Debug.Log($"Switching to section {value + 1}");
+    //         player.GoToLayer(value);
+    //     });
+    // }
 
     private string GetPlayingText() {
         if (!player.IsPlaying()) {
@@ -110,8 +117,7 @@ public class VerticalUIController : MonoBehaviour
             return "Playing Outro";
         }
 
-        int layer = player.GetCurrentLayer();
-        return player.IsFading() ? $"Changing to Layer {layer + 1}" : $"Playing Layer {layer + 1}";
+        return "Playing Layers";
     }
 
 

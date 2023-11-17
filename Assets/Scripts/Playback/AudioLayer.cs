@@ -43,7 +43,6 @@ public class AudioLayer : MonoBehaviour
     }
 
     public void Play(double playTime) {
-        Debug.Log("Calling play!");
         if (section == null) {
             Debug.Log("Play called before Init!");
             return;

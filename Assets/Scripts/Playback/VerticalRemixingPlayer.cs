@@ -26,9 +26,8 @@ public class VerticalRemixingPlayer : MonoBehaviour
     private Segment currentSegment;
     private Segment nextSegment;
     private double nextEventTime;
-
-    private int fadeCoroutineId = 0;
-    private Dictionary<int, Coroutine> activeFades;
+    private Coroutine fadeInCoroutine;
+    private Coroutine fadeOutCoroutine;
 
     private LayersPlayer layersPlayer;
 
@@ -38,7 +37,6 @@ public class VerticalRemixingPlayer : MonoBehaviour
     }
     
     void Start() {
-        activeFades = new Dictionary<int, Coroutine>();
     }
 
     void Update() {
@@ -47,6 +45,18 @@ public class VerticalRemixingPlayer : MonoBehaviour
             return;
         }
 
+        Debug.Log($"current {currentSegment} next {nextSegment}");
+
+        // Handle current segment
+        if (currentSegment == Segment.Intro && nextSegment != Segment.Intro) {
+            StartCoroutine(FadeOut(introOutroAudio, config.intro.fadeOutTime));
+        }
+
+        if (currentSegment == Segment.Layers && nextSegment != Segment.Layers) {
+            layersPlayer.FadeOutAllLayers();
+        }
+
+        // Handle next segment
         currentSegment = nextSegment;
 
         if (currentSegment == Segment.None) {
@@ -64,6 +74,7 @@ public class VerticalRemixingPlayer : MonoBehaviour
             }
             introOutroAudio.clip = intro;
             introOutroAudio.PlayScheduled(nextEventTime);
+            introOutroAudio.volume = 1.0f;
             nextEventTime += config.hasReverb && config.intro.loopLength > 0.0f ? config.intro.loopLength : intro.length;
             nextSegment = Segment.Layers;
             Debug.Log($"Playing Intro, next check at {nextEventTime}");
@@ -75,22 +86,20 @@ public class VerticalRemixingPlayer : MonoBehaviour
         }
 
         if (currentSegment == Segment.Outro) {
-            // Stop playing layers
-            layersPlayer.FadeOutAllLayers();
             AudioClip outro = AudioCache.Instance().GetClip(FilePathUtils.LocalPathToFullPath(config.outro.file));
             if (outro == null) {
                 Debug.Log($"No audio loaded for file {config.outro.file}");
                 return;
             }
             introOutroAudio.clip = outro;
-            introOutroAudio.PlayScheduled(nextEventTime);
+            StartCoroutine(FadeIn(introOutroAudio, config.outro.fadeInTime));
             nextSegment = Segment.None;
-            nextEventTime += config.hasReverb && config.outro.loopLength > 0.0f ? config.outro.loopLength : outro.length;
+            nextEventTime += outro.length;
         }
     }
 
     public bool IsFading() {
-        return activeFades.Count() > 0;
+        return fadeInCoroutine != null || fadeOutCoroutine != null;
     }
 
     public bool IsPlaying() {
@@ -139,10 +148,14 @@ public class VerticalRemixingPlayer : MonoBehaviour
     }
 
     public void StopPlayback() {
-        foreach (Coroutine coroutine in activeFades.Values) {
-            StopCoroutine(coroutine);
+        if (fadeInCoroutine != null) {
+            StopCoroutine(fadeInCoroutine);
+            fadeInCoroutine = null;
         }
-        activeFades.Clear();
+        if (fadeOutCoroutine != null) {
+            StopCoroutine(fadeOutCoroutine);
+            fadeOutCoroutine = null;
+        }
 
         layersPlayer.Stop();
 
@@ -150,5 +163,38 @@ public class VerticalRemixingPlayer : MonoBehaviour
 
         currentSegment = Segment.None;
         isPlaying = false;
+    }
+
+    private IEnumerator FadeIn(AudioSource audio, float fadeTime) {
+        return Fade(audio, fadeTime, true);
+    }
+
+    private IEnumerator FadeOut(AudioSource audio, float fadeTime) {
+        return Fade(audio, fadeTime, false);
+    }
+
+    private IEnumerator Fade(AudioSource audio, float fadeTime, bool fadeIn) {
+        Debug.Log($"Starting fade in: {fadeIn} for {fadeTime} seconds");
+        if (fadeIn) {
+            audio.volume = 0;
+            audio.Play();
+        }
+
+        while (fadeIn ? (audio.volume < 1.0f) : (audio.volume > 0.0f)) {
+            float diff = fadeTime == 0.0f ? 1.0f : Time.deltaTime / fadeTime;
+            audio.volume += fadeIn ? diff : (-1.0f * diff);
+            yield return null;
+        }
+
+        if (!fadeIn) {
+            audio.Stop();
+        }
+        
+        if (fadeIn) {
+            fadeInCoroutine = null;
+        } else {
+            fadeOutCoroutine = null;
+        }
+        Debug.Log($"Finished fade in: {fadeIn}");
     }
 }

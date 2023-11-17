@@ -132,7 +132,7 @@ public class LayersPlayer : MonoBehaviour {
     }
 
     private IEnumerator Fade(int layer, float fadeTime, bool fadeIn, Action onComplete) {
-        Debug.Log($"Starting fade {(fadeIn ? "in" : "out")} for {fadeTime} seconds on layer {layer}");
+        // Debug.Log($"Starting fade {(fadeIn ? "in" : "out")} for {fadeTime} seconds on layer {layer}");
 
         float volume = GetLayerVolume(layer);
         while (fadeIn ? (volume < 1.0f) : (volume > 0.0f)) {

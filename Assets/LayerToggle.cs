@@ -24,7 +24,7 @@ public class LayerToggle : MonoBehaviour
         gameObject.GetComponent<Toggle>().onValueChanged.AddListener((isOn) => {
             onLayerToggle(this.index, isOn);
         });
-        gameObject.transform.Find("Label").GetComponent<Text>().text = $"{(index + 1)}";
+        gameObject.transform.Find("Label").GetComponent<Text>().text = $"Layer {(index + 1)}";
         GetComponent<Toggle>().isOn = isOn;
     }
 

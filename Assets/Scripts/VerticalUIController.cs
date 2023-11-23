@@ -81,28 +81,12 @@ public class VerticalUIController : MonoBehaviour
         restartButton.interactable = !player.IsPlaying();
         stopButton.interactable = player.IsPlaying();
         outroButton.interactable = 
-            currentConfig.hasIntroOutro &&
-            currentConfig.intro != null && 
+            currentConfig.HasOutro() &&
             player.IsPlaying() && 
             player.GetCurrentSegment() != Segment.Outro && 
             !player.IsFading();
         nextSectionText.text = GetPlayingText();
     }
-
-    // private void setupLayersDropdown() {
-    //     layersDropdown.ClearOptions();
-
-    //     List<string> options = new List<string>();
-    //     for (int i = 0; i < currentConfig.layers.Length; i++) {
-    //         options.Add($"Layer {i + 1}");
-    //     }
-    //     layersDropdown.AddOptions(options);
-    //     layersDropdown.onValueChanged.AddListener(delegate {
-    //         int value = layersDropdown.value;
-    //         Debug.Log($"Switching to section {value + 1}");
-    //         player.GoToLayer(value);
-    //     });
-    // }
 
     private string GetPlayingText() {
         if (!player.IsPlaying()) {

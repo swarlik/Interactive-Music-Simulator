@@ -23,8 +23,8 @@ public class VerticalRemixingPlayer : MonoBehaviour
     private AudioSource introOutroAudio;
     private VerticalRemixingConfig config;
     private bool isPlaying;
-    private Segment currentSegment;
-    private Segment nextSegment;
+    private Segment currentSegment = Segment.None;
+    private Segment nextSegment = Segment.None;
     private double nextEventTime;
     private Coroutine fadeInCoroutine;
     private Coroutine fadeOutCoroutine;
@@ -121,7 +121,8 @@ public class VerticalRemixingPlayer : MonoBehaviour
 
         nextEventTime = AudioSettings.dspTime + OFFSET;
 
-        nextSegment = config.hasIntroOutro ? Segment.Intro : Segment.Layers;
+        Debug.Log($"Starting playback. has intro? {config.HasIntro()}");
+        nextSegment = config.HasIntro() ? Segment.Intro : Segment.Layers;
 
         this.config = config;
         isPlaying = true;
@@ -143,6 +144,9 @@ public class VerticalRemixingPlayer : MonoBehaviour
     }
 
     public void GoToOutro() {
+        if (!config.HasOutro()) {
+            return;
+        }
         nextSegment = Segment.Outro;
         nextEventTime = AudioSettings.dspTime + OFFSET;
     }

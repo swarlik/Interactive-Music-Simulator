@@ -20,4 +20,12 @@ public class VerticalRemixingConfig {
         Additive,
         Independent
     }
+
+    public bool HasIntro() {
+        return hasIntroOutro && intro != null && intro.file != null && intro.file != "";
+    }
+
+    public bool HasOutro() {
+        return hasIntroOutro && outro != null && outro.file != null && outro.file != "";
+    }
 }
